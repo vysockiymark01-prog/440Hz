@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import BottomNav from './components/BottomNav.jsx'
+import ThemeQuickToggle from './components/ThemeQuickToggle.jsx'
 
 import ReferenceHome from './pages/reference/ReferenceHome.jsx'
 import LectureView from './pages/reference/LectureView.jsx'
@@ -28,6 +29,7 @@ import Appearance from './pages/more/Appearance.jsx'
 export default function App() {
   return (
     <>
+      <ThemeQuickToggle />
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Navigate to="/reference" replace />} />

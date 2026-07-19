@@ -348,3 +348,31 @@ table.wire-table th { color: var(--text-dim); font-weight: 600; font-size: 12px;
 .theme-option.active .check {
   visibility: visible;
 }
+
+.theme-quick-toggle {
+  position: fixed;
+  top: calc(10px + var(--safe-top));
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(28, 28, 30, 0.72);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 0;
+}
+.theme-quick-toggle:active {
+  background: rgba(38, 38, 42, 0.85);
+}
+:root[data-theme="light"] .theme-quick-toggle {
+  background: rgba(255, 255, 255, 0.8);
+}
+:root[data-theme="light"] .theme-quick-toggle:active {
+  background: rgba(240, 240, 235, 0.9);
+}
