@@ -45,8 +45,12 @@ export default function BottomNav() {
     <nav className="bottom-nav">
       {items.map((it) => {
         const active = location.pathname.split('/')[1] === it.key
+        // Если раздел уже открыт — ведём на его начало (работает как «назад»
+        // снизу, не нужно тянуться к ссылке «‹ Назад» в верхней части экрана).
+        // Если раздел не открыт — возвращаем туда, где читали в прошлый раз.
+        const to = active ? `/${it.key}` : targets[it.key]
         return (
-          <Link key={it.key} to={targets[it.key]} className={active ? 'active' : ''}>
+          <Link key={it.key} to={to} className={active ? 'active' : ''}>
             <span className="icon">{it.icon}</span>
             <span>{it.label}</span>
           </Link>
