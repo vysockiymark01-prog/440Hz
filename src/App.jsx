@@ -8,6 +8,8 @@ import ArticleView from './pages/reference/ArticleView.jsx'
 import Glossary from './pages/reference/Glossary.jsx'
 import GlossaryTermView from './pages/reference/GlossaryTermView.jsx'
 import SearchScreen from './pages/reference/SearchScreen.jsx'
+import QuizHome from './pages/reference/QuizHome.jsx'
+import QuizRunner from './pages/reference/QuizRunner.jsx'
 
 import TrainerHome from './pages/trainer/TrainerHome.jsx'
 import ListenBeats from './pages/trainer/ListenBeats.jsx'
@@ -38,6 +40,8 @@ export default function App() {
           <Route path="/reference/search" element={<SearchScreen />} />
           <Route path="/reference/glossary" element={<Glossary />} />
           <Route path="/reference/glossary/:termId" element={<GlossaryTermView />} />
+          <Route path="/reference/quiz" element={<QuizHome />} />
+          <Route path="/reference/quiz/:lectureId" element={<QuizRunner />} />
           <Route path="/reference/:lectureId" element={<LectureView />} />
           <Route path="/reference/:lectureId/:articleId" element={<ArticleView />} />
 

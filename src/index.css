@@ -376,3 +376,12 @@ table.wire-table th { color: var(--text-dim); font-weight: 600; font-size: 12px;
 :root[data-theme="light"] .theme-quick-toggle:active {
   background: rgba(240, 240, 235, 0.9);
 }
+
+.quiz-correct {
+  border-color: var(--success) !important;
+  background: var(--success-soft-bg) !important;
+}
+.quiz-wrong {
+  border-color: var(--danger) !important;
+  background: var(--danger-soft-bg) !important;
+}
