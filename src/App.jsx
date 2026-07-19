@@ -23,6 +23,7 @@ import WorkOrderChecklist from './pages/tools/WorkOrderChecklist.jsx'
 import MoreHome from './pages/more/MoreHome.jsx'
 import Favorites from './pages/more/Favorites.jsx'
 import About from './pages/more/About.jsx'
+import Appearance from './pages/more/Appearance.jsx'
 
 export default function App() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/favorites" element={<Favorites />} />
+          <Route path="/more/appearance" element={<Appearance />} />
           <Route path="/more/about" element={<About />} />
 
           <Route path="*" element={<Navigate to="/reference" replace />} />

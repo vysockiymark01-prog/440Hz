@@ -8,6 +8,10 @@ export default function MoreHome() {
         <span className="row-start">⭐ <span>Избранное</span></span>
         <span>›</span>
       </Link>
+      <Link to="/more/appearance" className="card-tap row">
+        <span className="row-start">🎨 <span>Оформление</span></span>
+        <span>›</span>
+      </Link>
       <Link to="/more/about" className="card-tap row">
         <span className="row-start">ℹ️ <span>О приложении</span></span>
         <span>›</span>
