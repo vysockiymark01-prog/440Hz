@@ -62,9 +62,11 @@ export default function CountBeats() {
         <div className="stat-box"><div className="v">{avgError}</div><div className="l">ср. ошибка, Гц</div></div>
       </div>
 
-      <button className="btn btn-block" onClick={play} disabled={isPlaying}>
-        {isPlaying ? '▶ Играет…' : '▶ Проиграть пару'}
-      </button>
+      {isPlaying ? (
+        <button className="btn btn-block" onClick={stop}>⏸ Остановить</button>
+      ) : (
+        <button className="btn btn-block" onClick={play}>▶ Проиграть пару</button>
+      )}
 
       <div style={{ margin: '16px 0' }}>
         <input

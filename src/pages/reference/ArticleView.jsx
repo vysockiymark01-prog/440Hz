@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import TermText from '../../components/TermText.jsx'
+import ArticleImages from '../../components/ArticleImages.jsx'
 import { useFavorites } from '../../hooks/useFavorites.js'
 
 export default function ArticleView() {
@@ -33,6 +34,7 @@ export default function ArticleView() {
       </div>
       <p className="pill" style={{ marginBottom: 14 }}>Лекция {lecture.num} · {lecture.title}</p>
       <TermText text={article.body} />
+      <ArticleImages articleId={article.id} />
     </div>
   )
 }
