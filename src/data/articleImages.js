@@ -13,6 +13,13 @@ const articleImages = {
   'fabriki-proizvoditeli': [
     { src: 'fabriki-karta.jpg', caption: 'Карта фабрик и стран-производителей фортепиано по годам основания.' },
   ],
+  'detali-korpusa': [
+    { src: 'klaviatura-mehanizm.jpg', caption: 'Клавиатурный механизм: штульрама, клавиатурная рама из трёх брусьев, польстер, замочный брус.' },
+  ],
+  'chetyre-sistemy': [
+    { src: 'rama-chugunnaya.jpg', caption: 'Акустический аппарат: чугунная рама с перекрёстными струнами поверх резонансной деки.' },
+    { src: 'mehanika-tri-uzla.jpg', caption: 'Ударно-клавишный механизм: три узла — фигурный, шультерный, демпферный.' },
+  ],
   'priroda-zvuka': [
     { src: 'kolebanie-gerts.jpg', caption: 'Колебание 1 Гц и период колебания. 440 Гц = 440 колебаний в секунду.' },
     { src: 'perioid-oktava.jpg', caption: 'Разница в периодах: чем больше периодов в секунду, тем выше звук. 440 Гц на октаву выше 220 Гц.' },

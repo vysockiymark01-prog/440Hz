@@ -19,6 +19,10 @@ export default function ReferenceHome() {
         <span className="row-start">📝 <span>Тесты по темам</span></span>
         <span>›</span>
       </Link>
+      <Link to="/reference/care" className="card-tap row">
+        <span className="row-start">🧴 <span>Уход за инструментом</span></span>
+        <span>›</span>
+      </Link>
 
       <div className="section-label">Лекции</div>
       {lectures.map((l) => (

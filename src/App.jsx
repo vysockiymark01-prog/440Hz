@@ -10,6 +10,7 @@ import GlossaryTermView from './pages/reference/GlossaryTermView.jsx'
 import SearchScreen from './pages/reference/SearchScreen.jsx'
 import QuizHome from './pages/reference/QuizHome.jsx'
 import QuizRunner from './pages/reference/QuizRunner.jsx'
+import CareGuide from './pages/reference/CareGuide.jsx'
 
 import TrainerHome from './pages/trainer/TrainerHome.jsx'
 import ListenBeats from './pages/trainer/ListenBeats.jsx'
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/reference/glossary/:termId" element={<GlossaryTermView />} />
           <Route path="/reference/quiz" element={<QuizHome />} />
           <Route path="/reference/quiz/:lectureId" element={<QuizRunner />} />
+          <Route path="/reference/care" element={<CareGuide />} />
           <Route path="/reference/:lectureId" element={<LectureView />} />
           <Route path="/reference/:lectureId/:articleId" element={<ArticleView />} />
 
