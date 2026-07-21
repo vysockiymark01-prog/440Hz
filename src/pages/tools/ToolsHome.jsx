@@ -6,6 +6,8 @@ const items = [
   { to: '/tools/diagnostic', icon: '🔍', title: 'Чек-лист диагностики', desc: '5 этапов + когда не покупают и не настраивают' },
   { to: '/tools/work-order', icon: '✅', title: 'Порядок работы на заказе', desc: '7 шагов канонического порядка' },
   { to: '/tools/shop', icon: '🛒', title: 'Где купить инструменты', desc: 'Ссылки на маркетплейсы: ключи, смазка, полироль' },
+  { to: '/tools/tuning-fork', icon: '🎵', title: 'Камертон', desc: 'Эталонный тон 438–443 Гц для сверки на слух' },
+  { to: '/tools/field-visit', icon: '🧳', title: 'На выезд', desc: 'Свод чек-листов + быстрые ссылки, можно поделиться' },
 ]
 
 export default function ToolsHome() {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
+import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 import BeatVisualizer from '../../components/BeatVisualizer.jsx'
 
 const BASE = 440
@@ -15,6 +16,7 @@ function randomTarget() {
 export default function MergeUnison() {
   const navigate = useNavigate()
   const { start, stop, setFreqB, getAnalyser, isPlaying } = useBeatEngine()
+  const { recordActivity } = useTrainerStreak()
   const [hiddenTarget, setHiddenTarget] = useState(randomTarget)
   const [knob, setKnob] = useState(0)
   const [revealed, setRevealed] = useState(null)
@@ -56,7 +58,8 @@ export default function MergeUnison() {
   const check = useCallback(() => {
     const error = Math.abs(currentOffset)
     setRevealed({ success: error <= SUCCESS_TOLERANCE, error, target: hiddenTarget })
-  }, [currentOffset, hiddenTarget])
+    recordActivity()
+  }, [currentOffset, hiddenTarget, recordActivity])
 
   const newRound = () => {
     stop()

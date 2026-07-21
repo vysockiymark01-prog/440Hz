@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
+import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 import BeatVisualizer from '../../components/BeatVisualizer.jsx'
 
 const BASE = 440
@@ -9,6 +10,7 @@ export default function ListenBeats() {
   const navigate = useNavigate()
   const [diff, setDiff] = useState(2)
   const { start, stop, setFreqB, getAnalyser, isPlaying } = useBeatEngine()
+  const { recordActivity } = useTrainerStreak()
 
   useEffect(() => {
     if (isPlaying) setFreqB(BASE + diff)
@@ -17,8 +19,12 @@ export default function ListenBeats() {
   useEffect(() => () => stop(), [stop])
 
   const toggle = () => {
-    if (isPlaying) stop()
-    else start(BASE, BASE + diff, 0.18)
+    if (isPlaying) {
+      stop()
+    } else {
+      start(BASE, BASE + diff, 0.18)
+      recordActivity()
+    }
   }
 
   return (

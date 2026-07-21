@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 
 const BASE = 440
 const TOLERANCE = 0.3
@@ -17,6 +18,7 @@ export default function CountBeats() {
   const [answer, setAnswer] = useState('')
   const [result, setResult] = useState(null)
   const [stats, setStats] = useLocalStorage('pt_count_stats_v1', { attempts: 0, correct: 0, totalError: 0 })
+  const { recordActivity } = useTrainerStreak()
   const revealedRef = useRef(false)
 
   useEffect(() => () => stop(), [stop])
@@ -45,6 +47,7 @@ export default function CountBeats() {
       totalError: s.totalError + error,
     }))
     stop()
+    recordActivity()
   }
 
   const avgError = stats.attempts ? (stats.totalError / stats.attempts).toFixed(2) : '—'

@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
+import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 
 const BASE = 440
 
 export default function SenseSecond() {
   const navigate = useNavigate()
   const { start, stop, isPlaying } = useBeatEngine()
+  const { recordActivity } = useTrainerStreak()
   const startTimeRef = useRef(null)
   const [taps, setTaps] = useState([])
 
@@ -18,6 +20,7 @@ export default function SenseSecond() {
 
   const finish = () => {
     stop()
+    if (taps.length > 0) recordActivity()
   }
 
   const tap = () => {

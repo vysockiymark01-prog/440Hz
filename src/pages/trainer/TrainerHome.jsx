@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 
 const modes = [
   {
@@ -25,13 +26,32 @@ const modes = [
     title: 'Сведи унисон',
     desc: 'Сведите скрытое смещение в ноль, ориентируясь только на поведение биений',
   },
+  {
+    to: '/trainer/temperament',
+    icon: '🎼',
+    title: 'Темперация по кругу квинт',
+    desc: 'Реальная цепочка A–E–H–Fis–Cis–Gis–Es–B–F–C–G–D–A на настоящих частотах 12-TET',
+  },
 ]
 
 export default function TrainerHome() {
+  const { streak, todayDone } = useTrainerStreak()
+
   return (
     <div>
       <h1 className="screen-title">Тренажёр биений</h1>
       <p className="screen-subtitle">Web Audio: две синусоиды с плавной атакой/затуханием, без щелчков</p>
+
+      {streak.current > 0 && (
+        <div className="card" style={{ textAlign: 'center', marginBottom: 16 }}>
+          <div className="big-number">🔥 {streak.current}</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+            {streak.current === 1 ? 'день подряд' : 'дней подряд'}
+            {!todayDone && ' — позанимайтесь сегодня, чтобы не прервать серию'}
+            {streak.best > streak.current && ` · рекорд: ${streak.best}`}
+          </div>
+        </div>
+      )}
 
       {modes.map((m) => (
         <Link key={m.to} to={m.to} className="card-tap row">

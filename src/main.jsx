@@ -4,13 +4,16 @@ import { HashRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
+import { FontScaleProvider } from './contexts/FontScaleContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>
-      <HashRouter>
-        <App />
-      </HashRouter>
+      <FontScaleProvider>
+        <HashRouter>
+          <App />
+        </HashRouter>
+      </FontScaleProvider>
     </ThemeProvider>
   </StrictMode>,
 )

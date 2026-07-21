@@ -17,6 +17,7 @@ import ListenBeats from './pages/trainer/ListenBeats.jsx'
 import CountBeats from './pages/trainer/CountBeats.jsx'
 import SenseSecond from './pages/trainer/SenseSecond.jsx'
 import MergeUnison from './pages/trainer/MergeUnison.jsx'
+import TemperamentTrainer from './pages/trainer/TemperamentTrainer.jsx'
 
 import ToolsHome from './pages/tools/ToolsHome.jsx'
 import WireTable from './pages/tools/WireTable.jsx'
@@ -24,11 +25,14 @@ import StringOrderForm from './pages/tools/StringOrderForm.jsx'
 import DiagnosticChecklist from './pages/tools/DiagnosticChecklist.jsx'
 import WorkOrderChecklist from './pages/tools/WorkOrderChecklist.jsx'
 import ShopLinks from './pages/tools/ShopLinks.jsx'
+import TuningFork from './pages/tools/TuningFork.jsx'
+import FieldVisit from './pages/tools/FieldVisit.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
 import Favorites from './pages/more/Favorites.jsx'
 import About from './pages/more/About.jsx'
 import Appearance from './pages/more/Appearance.jsx'
+import DataBackup from './pages/more/DataBackup.jsx'
 
 export default function App() {
   return (
@@ -53,6 +57,7 @@ export default function App() {
           <Route path="/trainer/count" element={<CountBeats />} />
           <Route path="/trainer/second" element={<SenseSecond />} />
           <Route path="/trainer/unison" element={<MergeUnison />} />
+          <Route path="/trainer/temperament" element={<TemperamentTrainer />} />
 
           <Route path="/tools" element={<ToolsHome />} />
           <Route path="/tools/wire" element={<WireTable />} />
@@ -60,11 +65,14 @@ export default function App() {
           <Route path="/tools/diagnostic" element={<DiagnosticChecklist />} />
           <Route path="/tools/work-order" element={<WorkOrderChecklist />} />
           <Route path="/tools/shop" element={<ShopLinks />} />
+          <Route path="/tools/tuning-fork" element={<TuningFork />} />
+          <Route path="/tools/field-visit" element={<FieldVisit />} />
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/favorites" element={<Favorites />} />
           <Route path="/more/appearance" element={<Appearance />} />
           <Route path="/more/about" element={<About />} />
+          <Route path="/more/backup" element={<DataBackup />} />
 
           <Route path="*" element={<Navigate to="/reference" replace />} />
         </Routes>

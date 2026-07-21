@@ -69,6 +69,7 @@ html, body {
   flex-direction: column;
   position: relative;
   background: var(--bg);
+  zoom: var(--ui-zoom, 1);
 }
 
 a { color: var(--accent); text-decoration: none; }
