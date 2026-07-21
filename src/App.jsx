@@ -23,6 +23,7 @@ import WireTable from './pages/tools/WireTable.jsx'
 import StringOrderForm from './pages/tools/StringOrderForm.jsx'
 import DiagnosticChecklist from './pages/tools/DiagnosticChecklist.jsx'
 import WorkOrderChecklist from './pages/tools/WorkOrderChecklist.jsx'
+import ShopLinks from './pages/tools/ShopLinks.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
 import Favorites from './pages/more/Favorites.jsx'
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/tools/order-form" element={<StringOrderForm />} />
           <Route path="/tools/diagnostic" element={<DiagnosticChecklist />} />
           <Route path="/tools/work-order" element={<WorkOrderChecklist />} />
+          <Route path="/tools/shop" element={<ShopLinks />} />
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/favorites" element={<Favorites />} />

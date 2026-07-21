@@ -5,6 +5,7 @@ const items = [
   { to: '/tools/order-form', icon: '📝', title: 'Заказ басовой струны', desc: '8 параметров → готовый текст заказа мастеру' },
   { to: '/tools/diagnostic', icon: '🔍', title: 'Чек-лист диагностики', desc: '5 этапов + когда не покупают и не настраивают' },
   { to: '/tools/work-order', icon: '✅', title: 'Порядок работы на заказе', desc: '7 шагов канонического порядка' },
+  { to: '/tools/shop', icon: '🛒', title: 'Где купить инструменты', desc: 'Ссылки на маркетплейсы: ключи, смазка, полироль' },
 ]
 
 export default function ToolsHome() {
