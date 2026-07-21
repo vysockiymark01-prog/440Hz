@@ -45,9 +45,14 @@ export default function ListenBeats() {
         value={diff}
         onChange={(e) => setDiff(parseFloat(e.target.value))}
       />
-      <div className="row" style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: -6, marginBottom: 16 }}>
+      <div className="row" style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: -6, marginBottom: 12 }}>
         <span>0 Гц (ноль)</span>
         <span>8 Гц</span>
+      </div>
+
+      <div className="row" style={{ gap: 8, marginBottom: 16 }}>
+        <button className="btn" style={{ flex: 1 }} onClick={() => setDiff(0)}>0 биений/сек</button>
+        <button className="btn" style={{ flex: 1 }} onClick={() => setDiff(1)}>1 биение/сек</button>
       </div>
 
       <BeatVisualizer getAnalyser={getAnalyser} isPlaying={isPlaying} />
