@@ -76,6 +76,7 @@ export default function App() {
           <Route path="/tools/tension" element={<TensionCalculator />} />
           <Route path="/tools/phrases" element={<ClientPhrases />} />
           <Route path="/tools/my-orders" element={<MyOrders />} />
+          <Route path="/tools/my-instruments" element={<Navigate to="/tools/my-orders" replace />} />
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/favorites" element={<Favorites />} />
