@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function About() {
   const navigate = useNavigate()
@@ -24,7 +24,7 @@ export default function About() {
         </p>
       </div>
       <div className="card">
-        <p style={{ marginBottom: 0 }}>Версия 1.0.0 · MVP</p>
+        <p style={{ marginBottom: 0 }}>Версия 1.2.0 · <Link to="/more/changelog">что нового</Link></p>
       </div>
     </div>
   )

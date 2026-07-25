@@ -27,12 +27,17 @@ import WorkOrderChecklist from './pages/tools/WorkOrderChecklist.jsx'
 import ShopLinks from './pages/tools/ShopLinks.jsx'
 import TuningFork from './pages/tools/TuningFork.jsx'
 import FieldVisit from './pages/tools/FieldVisit.jsx'
+import PitchTuner from './pages/tools/PitchTuner.jsx'
+import TensionCalculator from './pages/tools/TensionCalculator.jsx'
+import ClientPhrases from './pages/tools/ClientPhrases.jsx'
+import MyInstruments from './pages/tools/MyInstruments.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
 import Favorites from './pages/more/Favorites.jsx'
 import About from './pages/more/About.jsx'
 import Appearance from './pages/more/Appearance.jsx'
 import DataBackup from './pages/more/DataBackup.jsx'
+import Changelog from './pages/more/Changelog.jsx'
 
 export default function App() {
   return (
@@ -67,12 +72,17 @@ export default function App() {
           <Route path="/tools/shop" element={<ShopLinks />} />
           <Route path="/tools/tuning-fork" element={<TuningFork />} />
           <Route path="/tools/field-visit" element={<FieldVisit />} />
+          <Route path="/tools/pitch-detector" element={<PitchTuner />} />
+          <Route path="/tools/tension" element={<TensionCalculator />} />
+          <Route path="/tools/phrases" element={<ClientPhrases />} />
+          <Route path="/tools/my-instruments" element={<MyInstruments />} />
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/favorites" element={<Favorites />} />
           <Route path="/more/appearance" element={<Appearance />} />
           <Route path="/more/about" element={<About />} />
           <Route path="/more/backup" element={<DataBackup />} />
+          <Route path="/more/changelog" element={<Changelog />} />
 
           <Route path="*" element={<Navigate to="/reference" replace />} />
         </Routes>
