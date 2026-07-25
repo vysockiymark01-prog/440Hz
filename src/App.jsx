@@ -30,7 +30,7 @@ import FieldVisit from './pages/tools/FieldVisit.jsx'
 import PitchTuner from './pages/tools/PitchTuner.jsx'
 import TensionCalculator from './pages/tools/TensionCalculator.jsx'
 import ClientPhrases from './pages/tools/ClientPhrases.jsx'
-import MyInstruments from './pages/tools/MyInstruments.jsx'
+import MyOrders from './pages/tools/MyOrders.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
 import Favorites from './pages/more/Favorites.jsx'
@@ -75,7 +75,7 @@ export default function App() {
           <Route path="/tools/pitch-detector" element={<PitchTuner />} />
           <Route path="/tools/tension" element={<TensionCalculator />} />
           <Route path="/tools/phrases" element={<ClientPhrases />} />
-          <Route path="/tools/my-instruments" element={<MyInstruments />} />
+          <Route path="/tools/my-orders" element={<MyOrders />} />
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/favorites" element={<Favorites />} />
