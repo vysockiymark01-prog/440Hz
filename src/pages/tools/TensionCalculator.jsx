@@ -62,6 +62,9 @@ export default function TensionCalculator() {
           <>
             <div className="big-number">{tensionKgf.toFixed(1)} кгс</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>≈ {tensionN.toFixed(0)} Н</div>
+            <div style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: 6 }}>
+              кгс — килограмм-сила, внесистемная единица натяжения (1 кгс ≈ 9,8 Н)
+            </div>
           </>
         ) : (
           <div style={{ color: 'var(--text-faint)' }}>Заполните все поля числами больше нуля</div>
