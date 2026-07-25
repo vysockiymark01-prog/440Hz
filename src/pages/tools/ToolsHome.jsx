@@ -12,6 +12,8 @@ const items = [
   { to: '/tools/pitch-detector', icon: '🎙️', title: 'Определитель высоты звука', desc: 'Слушает микрофон и показывает ближайшую ноту и отклонение в центах' },
   { to: '/tools/tension', icon: '⚖️', title: 'Калькулятор натяжения', desc: 'Диаметр, мензура, частота → натяжение в Н и кгс' },
   { to: '/tools/phrases', icon: '💬', title: 'Фразы для клиента', desc: 'Готовые объяснения с копированием в буфер' },
+  { to: '/tools/common-mistakes', icon: '⚠️', title: 'Частые ошибки новичка', desc: '12 предупреждений из конспекта в одном месте' },
+  { to: '/tools/symptom-quiz', icon: '🩺', title: 'Определи неисправность', desc: 'Квиз: по описанию симптома угадать тип шума' },
 ]
 
 export default function ToolsHome() {

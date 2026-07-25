@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import orderOperations from '../../data/orderOperations.js'
+import { orderTotal } from '../../utils/orderTotal.js'
 
 function escapeIcs(text) {
   return String(text)
@@ -19,12 +20,31 @@ function formatIcsDate(d) {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`
 }
 
-function orderTotal(order) {
-  return orderOperations.reduce((sum, op) => {
-    if (!order.checklist?.[op.id]) return sum
-    const price = order.prices?.[op.id]
-    return sum + (typeof price === 'number' && !Number.isNaN(price) ? price : 0)
-  }, 0)
+function clientKey(order) {
+  if (order.phone && order.phone.trim()) return `phone:${order.phone.replace(/[^+\d]/g, '')}`
+  if (order.clientName && order.clientName.trim()) return `name:${order.clientName.trim().toLowerCase()}`
+  return null
+}
+
+function getOverdueClients(items) {
+  const groups = {}
+  items.forEach((it) => {
+    if (!it.date) return
+    const key = clientKey(it)
+    if (!key) return
+    if (!groups[key] || new Date(it.date) > new Date(groups[key].latest)) {
+      groups[key] = {
+        key,
+        label: it.clientName || it.brand || 'Без имени',
+        latest: it.date,
+        phone: it.phone,
+      }
+    }
+  })
+  const now = new Date()
+  return Object.values(groups)
+    .filter((g) => (now - new Date(g.latest)) / 86400000 >= 365)
+    .sort((a, b) => new Date(a.latest) - new Date(b.latest))
 }
 
 function buildIcs(order) {
@@ -39,10 +59,19 @@ function buildIcs(order) {
   const descriptionParts = []
   if (order.brand) descriptionParts.push(`Инструмент: ${order.brand}`)
   if (order.phone) descriptionParts.push(`Телефон: ${order.phone}`)
+  const included = orderOperations.filter((s) => order.checklist?.[s.id])
+  if (included.length) {
+    const lines = included.map((s) => {
+      const price = order.prices?.[s.id]
+      const priceText = typeof price === 'number' && !Number.isNaN(price) && price > 0 ? `${price} ₽` : 'без цены'
+      return `- ${s.title}: ${priceText}`
+    })
+    descriptionParts.push(`Операции:\n${lines.join('\n')}`)
+  }
   const todo = orderOperations.filter((s) => !order.checklist?.[s.id]).map((s) => s.title)
   if (todo.length) descriptionParts.push(`Не сделано: ${todo.join(', ')}`)
   const total = orderTotal(order)
-  if (total > 0) descriptionParts.push(`Сумма: ${total} ₽`)
+  if (total > 0) descriptionParts.push(`Итого: ${total} ₽`)
   if (order.note) descriptionParts.push(`Заметка: ${order.note}`)
 
   const lines = [
@@ -70,6 +99,43 @@ function downloadIcs(order) {
   const a = document.createElement('a')
   a.href = url
   a.download = `zakaz-${order.date}.ics`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+function csvCell(value) {
+  const s = String(value ?? '')
+  return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+function downloadCsv(items) {
+  const header = ['Дата', 'Время', 'Клиент', 'Телефон', 'Адрес', 'Инструмент', 'Операции', 'Сумма, ₽', 'Заметка']
+  const rows = items.map((it) => {
+    const opsText = orderOperations
+      .filter((op) => it.checklist?.[op.id])
+      .map((op) => op.title)
+      .join(', ')
+    return [
+      it.date || '',
+      it.time || '',
+      it.clientName || '',
+      it.phone || '',
+      it.address || '',
+      it.brand || '',
+      opsText,
+      orderTotal(it),
+      it.note || '',
+    ]
+  })
+  const csv = [header, ...rows].map((row) => row.map(csvCell).join(';')).join('\r\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  const date = new Date().toISOString().slice(0, 10)
+  a.href = url
+  a.download = `zakazy-${date}.csv`
   document.body.appendChild(a)
   a.click()
   a.remove()
@@ -170,14 +236,44 @@ export default function MyOrders() {
     return new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`)
   })
 
+  const overdueClients = getOverdueClients(items)
+
   return (
     <div>
       <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Мои заказы</h1>
+      <div className="row" style={{ alignItems: 'flex-start' }}>
+        <h1 className="screen-title" style={{ marginBottom: 0 }}>Мои заказы</h1>
+        <span style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-sm" onClick={() => navigate('/tools/order-stats')}>📊 Статистика</button>
+          {items.length > 0 && (
+            <button className="btn btn-sm" onClick={() => downloadCsv(items)}>⬇️ CSV</button>
+          )}
+        </span>
+      </div>
       <p className="screen-subtitle">
         Клиенты, даты и чек-лист операций с ценами по каждому заказу. Дату и время можно
         экспортировать в календарь телефона или планшета. Хранится только на этом устройстве.
       </p>
+
+      {overdueClients.length > 0 && (
+        <div className="card" style={{ borderColor: 'var(--accent)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>
+            ⏰ {overdueClients.length} {overdueClients.length === 1 ? 'клиент не настраивался' : 'клиентов не настраивались'} больше года
+          </div>
+          {overdueClients.map((g) => {
+            const monthsAgo = Math.floor((new Date() - new Date(g.latest)) / 86400000 / 30)
+            return (
+              <div key={g.key} className="row" style={{ padding: '6px 0', fontSize: 13 }}>
+                <span>{g.label}</span>
+                <span style={{ color: 'var(--text-dim)' }}>
+                  {monthsAgo} мес. назад
+                  {g.phone && <> · <a href={`tel:${g.phone.replace(/[^+\d]/g, '')}`}>{g.phone}</a></>}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Добавить заказ</h3>
