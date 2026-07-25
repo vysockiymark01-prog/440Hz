@@ -31,7 +31,10 @@ function buildIcs(order) {
   if (!order.date) return null
   const start = new Date(`${order.date}T${order.time || '10:00'}`)
   if (Number.isNaN(start.getTime())) return null
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+  let end = order.endTime ? new Date(`${order.date}T${order.endTime}`) : null
+  if (!end || Number.isNaN(end.getTime()) || end <= start) {
+    end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
+  }
 
   const descriptionParts = []
   if (order.brand) descriptionParts.push(`Инструмент: ${order.brand}`)
@@ -73,7 +76,7 @@ function downloadIcs(order) {
   URL.revokeObjectURL(url)
 }
 
-function dateTimeLabel(dateStr, timeStr) {
+function dateTimeLabel(dateStr, timeStr, endTimeStr) {
   if (!dateStr) return { text: 'дата не указана', past: false }
   const dt = new Date(`${dateStr}T${timeStr || '00:00'}`)
   const now = new Date()
@@ -88,7 +91,7 @@ function dateTimeLabel(dateStr, timeStr) {
   else relative = `${Math.abs(diffDays)} дн. назад`
 
   const datePart = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  const timePart = timeStr ? `, ${timeStr}` : ''
+  const timePart = timeStr ? `, ${timeStr}${endTimeStr ? `–${endTimeStr}` : ''}` : ''
   return { text: `${datePart}${timePart} · ${relative}`, past: diffDays < 0 }
 }
 
@@ -101,6 +104,7 @@ export default function MyOrders() {
   const [address, setAddress] = useState('')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
+  const [endTime, setEndTime] = useState('')
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(null)
 
@@ -114,6 +118,7 @@ export default function MyOrders() {
       address: address.trim(),
       date,
       time,
+      endTime,
       note: note.trim(),
       checklist: {},
       prices: {},
@@ -125,6 +130,7 @@ export default function MyOrders() {
     setAddress('')
     setDate('')
     setTime('')
+    setEndTime('')
     setNote('')
   }
 
@@ -199,18 +205,24 @@ export default function MyOrders() {
           </label>
           <input type="text" placeholder="например, ул. Ленина, 10, кв. 5" value={address} onChange={(e) => setAddress(e.target.value)} />
         </div>
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
+            Дата визита
+          </label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
         <div className="row" style={{ gap: 10, marginBottom: 10 }}>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Дата визита
+              Начало работы
             </label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Время
+              Окончание
             </label>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
         </div>
         <div style={{ marginBottom: 12 }}>
@@ -229,7 +241,7 @@ export default function MyOrders() {
       )}
 
       {sorted.map((it) => {
-        const label = dateTimeLabel(it.date, it.time)
+        const label = dateTimeLabel(it.date, it.time, it.endTime)
         const doneCount = orderOperations.filter((s) => it.checklist?.[s.id]).length
         const total = orderTotal(it)
         const isOpen = expanded === it.id
