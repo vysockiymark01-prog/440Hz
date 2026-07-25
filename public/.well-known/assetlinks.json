@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.vysockiymark01_prog.twa",
+        "sha256_cert_fingerprints": ["4F:76:93:DC:F7:68:87:D2:B8:11:9E:03:2C:1A:9A:A9:38:64:E4:E3:60:F0:16:76:30:71:F9:EB:F0:E2:3D:A6"]
+      }
+    }]
