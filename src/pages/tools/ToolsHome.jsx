@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 const items = [
+  { to: '/tools/my-orders', icon: '🗒️', title: 'Мои заказы', desc: 'Клиенты, дата и время визита, чек-лист операций с ценами, экспорт в календарь' },
   { to: '/tools/wire', icon: '📏', title: 'Таблица проволоки Röslau', desc: 'Номер проволоки ↔ диаметр в мм, с поиском' },
   { to: '/tools/order-form', icon: '📝', title: 'Заказ басовой струны', desc: '8 параметров → готовый текст заказа мастеру' },
   { to: '/tools/diagnostic', icon: '🔍', title: 'Чек-лист диагностики', desc: '5 этапов + когда не покупают и не настраивают' },
@@ -11,7 +12,6 @@ const items = [
   { to: '/tools/pitch-detector', icon: '🎙️', title: 'Определитель высоты звука', desc: 'Слушает микрофон и показывает ближайшую ноту и отклонение в центах' },
   { to: '/tools/tension', icon: '⚖️', title: 'Калькулятор натяжения', desc: 'Диаметр, мензура, частота → натяжение в Н и кгс' },
   { to: '/tools/phrases', icon: '💬', title: 'Фразы для клиента', desc: 'Готовые объяснения с копированием в буфер' },
-  { to: '/tools/my-orders', icon: '🗒️', title: 'Мои заказы', desc: 'Клиенты, дата и время визита, чек-лист, экспорт в календарь' },
 ]
 
 export default function ToolsHome() {

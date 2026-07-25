@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
-import { workOrderSteps } from '../../data/checklists.js'
+import orderOperations from '../../data/orderOperations.js'
 
 function escapeIcs(text) {
   return String(text)
@@ -19,6 +19,14 @@ function formatIcsDate(d) {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`
 }
 
+function orderTotal(order) {
+  return orderOperations.reduce((sum, op) => {
+    if (!order.checklist?.[op.id]) return sum
+    const price = order.prices?.[op.id]
+    return sum + (typeof price === 'number' && !Number.isNaN(price) ? price : 0)
+  }, 0)
+}
+
 function buildIcs(order) {
   if (!order.date) return null
   const start = new Date(`${order.date}T${order.time || '10:00'}`)
@@ -28,8 +36,10 @@ function buildIcs(order) {
   const descriptionParts = []
   if (order.brand) descriptionParts.push(`Инструмент: ${order.brand}`)
   if (order.phone) descriptionParts.push(`Телефон: ${order.phone}`)
-  const todo = workOrderSteps.filter((s) => !order.checklist?.[s.id]).map((s) => s.title)
-  if (todo.length) descriptionParts.push(`Сделать: ${todo.join(', ')}`)
+  const todo = orderOperations.filter((s) => !order.checklist?.[s.id]).map((s) => s.title)
+  if (todo.length) descriptionParts.push(`Не сделано: ${todo.join(', ')}`)
+  const total = orderTotal(order)
+  if (total > 0) descriptionParts.push(`Сумма: ${total} ₽`)
   if (order.note) descriptionParts.push(`Заметка: ${order.note}`)
 
   const lines = [
@@ -106,6 +116,7 @@ export default function MyOrders() {
       time,
       note: note.trim(),
       checklist: {},
+      prices: {},
     }
     setItems((prev) => [...prev, entry])
     setBrand('')
@@ -121,10 +132,28 @@ export default function MyOrders() {
     setItems((prev) => prev.filter((it) => it.id !== id))
   }
 
-  const toggleChecklistItem = (orderId, stepId) => {
+  const toggleChecklistItem = (orderId, opId) => {
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== orderId) return it
+        const wasChecked = !!it.checklist?.[opId]
+        const nextChecklist = { ...it.checklist, [opId]: !wasChecked }
+        // При первом включении подставляем ориентировочную цену, если своя ещё не введена.
+        let nextPrices = it.prices || {}
+        if (!wasChecked && nextPrices[opId] === undefined) {
+          const op = orderOperations.find((o) => o.id === opId)
+          nextPrices = { ...nextPrices, [opId]: op?.defaultPrice ?? '' }
+        }
+        return { ...it, checklist: nextChecklist, prices: nextPrices }
+      })
+    )
+  }
+
+  const setOpPrice = (orderId, opId, value) => {
+    const num = value === '' ? '' : Number(value)
     setItems((prev) =>
       prev.map((it) =>
-        it.id === orderId ? { ...it, checklist: { ...it.checklist, [stepId]: !it.checklist?.[stepId] } } : it
+        it.id === orderId ? { ...it, prices: { ...it.prices, [opId]: num } } : it
       )
     )
   }
@@ -140,8 +169,8 @@ export default function MyOrders() {
       <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
       <h1 className="screen-title">Мои заказы</h1>
       <p className="screen-subtitle">
-        Клиенты, даты и чек-лист по каждому заказу. Дату и время можно экспортировать в календарь
-        телефона или планшета. Хранится только на этом устройстве.
+        Клиенты, даты и чек-лист операций с ценами по каждому заказу. Дату и время можно
+        экспортировать в календарь телефона или планшета. Хранится только на этом устройстве.
       </p>
 
       <div className="card">
@@ -201,7 +230,8 @@ export default function MyOrders() {
 
       {sorted.map((it) => {
         const label = dateTimeLabel(it.date, it.time)
-        const doneCount = workOrderSteps.filter((s) => it.checklist?.[s.id]).length
+        const doneCount = orderOperations.filter((s) => it.checklist?.[s.id]).length
+        const total = orderTotal(it)
         const isOpen = expanded === it.id
         return (
           <div key={it.id} className="card">
@@ -224,12 +254,15 @@ export default function MyOrders() {
                   <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 2 }}>{it.address}</div>
                 )}
                 {it.note && <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 4 }}>{it.note}</div>}
-                <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <button className="btn btn-sm" onClick={() => setExpanded(isOpen ? null : it.id)}>
-                    Чек-лист {doneCount}/{workOrderSteps.length}
+                    Чек-лист {doneCount}/{orderOperations.length}
                   </button>
                   {it.date && (
                     <button className="btn btn-sm" onClick={() => downloadIcs(it)}>📅 В календарь</button>
+                  )}
+                  {total > 0 && (
+                    <span className="pill badge-accent">{total.toLocaleString('ru-RU')} ₽</span>
                   )}
                 </div>
               </div>
@@ -238,16 +271,47 @@ export default function MyOrders() {
 
             {isOpen && (
               <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                {workOrderSteps.map((s) => (
-                  <label key={s.id} className={`checklist-item ${it.checklist?.[s.id] ? 'done' : ''}`}>
+                {orderOperations.map((s, i) => (
+                  <div
+                    key={s.id}
+                    className="row"
+                    style={{
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '9px 0',
+                      borderBottom: i < orderOperations.length - 1 ? '1px solid var(--border)' : 'none',
+                    }}
+                  >
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, margin: 0, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!it.checklist?.[s.id]}
+                        onChange={() => toggleChecklistItem(it.id, s.id)}
+                        style={{ width: 18, height: 18, accentColor: 'var(--accent)', flexShrink: 0 }}
+                      />
+                      <span
+                        style={{
+                          color: it.checklist?.[s.id] ? 'var(--text-faint)' : 'var(--text)',
+                          textDecoration: it.checklist?.[s.id] ? 'line-through' : 'none',
+                        }}
+                      >
+                        {s.title}
+                      </span>
+                    </label>
                     <input
-                      type="checkbox"
-                      checked={!!it.checklist?.[s.id]}
-                      onChange={() => toggleChecklistItem(it.id, s.id)}
+                      type="number"
+                      inputMode="numeric"
+                      placeholder="₽"
+                      value={it.prices?.[s.id] ?? ''}
+                      onChange={(e) => setOpPrice(it.id, s.id, e.target.value)}
+                      style={{ width: 84, flexShrink: 0, textAlign: 'right' }}
                     />
-                    <span className="checklist-text">{s.title}</span>
-                  </label>
+                  </div>
                 ))}
+                <div className="row" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontWeight: 700 }}>
+                  <span>Итого</span>
+                  <span>{total.toLocaleString('ru-RU')} ₽</span>
+                </div>
               </div>
             )}
           </div>
