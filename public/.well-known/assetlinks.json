@@ -3,6 +3,6 @@
       "target": {
         "namespace": "android_app",
         "package_name": "io.github.vysockiymark01_prog.twa",
-        "sha256_cert_fingerprints": ["4F:76:93:DC:F7:68:87:D2:B8:11:9E:03:2C:1A:9A:A9:38:64:E4:E3:60:F0:16:76:30:71:F9:EB:F0:E2:3D:A6"]
+        "sha256_cert_fingerprints": ["CE:CF:B2:47:45:17:BA:C9:59:A7:BA:FE:9E:4A:4C:F5:73:DE:1B:30:A8:91:C7:41:08:9E:28:81:24:B3:02:CA"]
       }
     }]
