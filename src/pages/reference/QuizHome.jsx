@@ -2,10 +2,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import quizzes from '../../data/quizzes.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
 
 export default function QuizHome() {
   const navigate = useNavigate()
   const [results] = useLocalStorage('pt_quiz_results_v1', {})
+  const { isLectureUnlocked } = useCourseProgress()
 
   return (
     <div>
@@ -16,6 +18,20 @@ export default function QuizHome() {
       {lectures.map((l) => {
         const questions = quizzes[l.id] || []
         const best = results[l.id]
+        const unlocked = isLectureUnlocked(l.id)
+        if (!unlocked) {
+          return (
+            <div key={l.id} className="card-tap row" style={{ opacity: 0.55, cursor: 'default' }}>
+              <span className="row-start">
+                <span className="pill badge-accent">{l.num}</span>
+                <span>
+                  <div style={{ fontWeight: 700 }}>{l.title}</div>
+                  <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>🔒 тема ещё закрыта</div>
+                </span>
+              </span>
+            </div>
+          )
+        }
         return (
           <Link key={l.id} to={`/reference/quiz/${l.id}`} className="card-tap row">
             <span className="row-start">

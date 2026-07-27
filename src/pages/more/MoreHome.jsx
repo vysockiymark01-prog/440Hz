@@ -4,6 +4,10 @@ export default function MoreHome() {
   return (
     <div>
       <h1 className="screen-title">Ещё</h1>
+      <Link to="/more/course" className="card-tap row">
+        <span className="row-start">🎓 <span>Мой курс</span></span>
+        <span>›</span>
+      </Link>
       <Link to="/more/favorites" className="card-tap row">
         <span className="row-start">⭐ <span>Избранное</span></span>
         <span>›</span>

@@ -3,21 +3,45 @@ import { useParams, useNavigate } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import quizzes from '../../data/quizzes.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
+import { pickQuote, finalQuote } from '../../data/quotes.js'
 
 export default function QuizRunner() {
   const { lectureId } = useParams()
   const navigate = useNavigate()
   const lecture = lectures.find((l) => l.id === lectureId)
   const questions = useMemo(() => quizzes[lectureId] || [], [lectureId])
+  const {
+    isLectureUnlocked, lockReason, unlockDateFor,
+    markTestPassed, testsPassed, quotesSeen, markQuoteSeen,
+    status, totalLectures, courseCompleteSeen, markCourseCompleteSeen,
+  } = useCourseProgress()
 
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState(null)
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const [results, setResults] = useLocalStorage('pt_quiz_results_v1', {})
+  const [quote, setQuote] = useState(null)
+  const [courseJustCompleted, setCourseJustCompleted] = useState(false)
 
   if (!lecture || questions.length === 0) {
     return <div className="empty-state">Тест не найден.</div>
+  }
+
+  if (!isLectureUnlocked(lecture.id)) {
+    const reason = lockReason(lecture.id)
+    return (
+      <div>
+        <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ Тесты по темам</button>
+        <h1 className="screen-title">{lecture.title}</h1>
+        <div className="empty-state">
+          {reason === 'prev_test'
+            ? 'Этот тест пока закрыт — сначала пройдите тест по предыдущей теме.'
+            : `Этот тест откроется ${new Date(unlockDateFor(lecture.id)).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}.`}
+        </div>
+      </div>
+    )
   }
 
   const question = questions[index]
@@ -36,6 +60,20 @@ export default function QuizRunner() {
       if (!prevBest || finalScore > prevBest.score) {
         setResults((r) => ({ ...r, [lectureId]: { score: finalScore, total: questions.length } }))
       }
+      if (finalScore >= 1) {
+        const alreadyPassed = !!testsPassed[lectureId]
+        markTestPassed(lectureId)
+        const { index: qi, quote: q } = pickQuote(quotesSeen)
+        markQuoteSeen(qi)
+        setQuote(q)
+        if (!alreadyPassed) {
+          const newPassedCount = Object.keys(testsPassed).length + 1
+          if (status === 'novice' && newPassedCount >= totalLectures && !courseCompleteSeen) {
+            setCourseJustCompleted(true)
+            markCourseCompleteSeen()
+          }
+        }
+      }
       setFinished(true)
     } else {
       setIndex((i) => i + 1)
@@ -48,6 +86,22 @@ export default function QuizRunner() {
     setSelected(null)
     setScore(0)
     setFinished(false)
+    setQuote(null)
+  }
+
+  if (finished && courseJustCompleted) {
+    return (
+      <div>
+        <h1 className="screen-title">Курс пройден! 🎉</h1>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🏆</div>
+          <div style={{ fontWeight: 700, marginBottom: 10 }}>Все темы курса открыты и тесты пройдены</div>
+          <div style={{ fontStyle: 'italic', color: 'var(--text)', marginBottom: 6 }}>«{finalQuote.text}»</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>— {finalQuote.author}</div>
+        </div>
+        <button className="btn btn-block btn-primary" onClick={() => navigate('/reference')}>К справочнику</button>
+      </div>
+    )
   }
 
   if (finished) {
@@ -60,6 +114,12 @@ export default function QuizRunner() {
           <div className="big-number">{score}/{questions.length}</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% правильных ответов</div>
         </div>
+        {quote && (
+          <div className="card" style={{ textAlign: 'center' }}>
+            <div style={{ fontStyle: 'italic', marginBottom: 6 }}>«{quote.text}»</div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>— {quote.author}</div>
+          </div>
+        )}
         <button className="btn btn-block btn-primary" onClick={restart}>Пройти ещё раз</button>
         <button className="btn btn-block" style={{ marginTop: 10 }} onClick={() => navigate('/reference/quiz')}>
           К списку тестов

@@ -36,6 +36,7 @@ import CommonMistakes from './pages/tools/CommonMistakes.jsx'
 import SymptomQuiz from './pages/tools/SymptomQuiz.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
+import MyCourse from './pages/more/MyCourse.jsx'
 import Favorites from './pages/more/Favorites.jsx'
 import About from './pages/more/About.jsx'
 import Appearance from './pages/more/Appearance.jsx'
@@ -85,6 +86,7 @@ export default function App() {
           <Route path="/tools/my-instruments" element={<Navigate to="/tools/my-orders" replace />} />
 
           <Route path="/more" element={<MoreHome />} />
+          <Route path="/more/course" element={<MyCourse />} />
           <Route path="/more/favorites" element={<Favorites />} />
           <Route path="/more/appearance" element={<Appearance />} />
           <Route path="/more/about" element={<About />} />
