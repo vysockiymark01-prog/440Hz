@@ -32,6 +32,12 @@ const modes = [
     title: 'Темперация по кругу квинт',
     desc: 'Реальная цепочка A–E–H–Fis–Cis–Gis–Es–B–F–C–G–D–A на настоящих частотах 12-TET',
   },
+  {
+    to: '/trainer/ear-diagnostics',
+    icon: '🩺',
+    title: 'Диагностика на слух',
+    desc: 'Узнавайте дребезжание, лишние обертона и негармоничность — синтетическая имитация дефектов',
+  },
 ]
 
 export default function TrainerHome() {

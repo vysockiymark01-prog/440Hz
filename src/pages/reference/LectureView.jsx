@@ -8,6 +8,7 @@ const PRACTICE_LINKS = {
   l2: [
     { to: '/trainer/listen', icon: '🌊', label: 'Послушать биения' },
     { to: '/trainer/count', icon: '🔢', label: 'Посчитай биения' },
+    { to: '/trainer/ear-diagnostics', icon: '🩺', label: 'Диагностика на слух' },
   ],
   l3: [
     { to: '/trainer/unison', icon: '🎯', label: 'Сведи унисон' },

@@ -18,6 +18,7 @@ import CountBeats from './pages/trainer/CountBeats.jsx'
 import SenseSecond from './pages/trainer/SenseSecond.jsx'
 import MergeUnison from './pages/trainer/MergeUnison.jsx'
 import TemperamentTrainer from './pages/trainer/TemperamentTrainer.jsx'
+import EarDiagnostics from './pages/trainer/EarDiagnostics.jsx'
 
 import ToolsHome from './pages/tools/ToolsHome.jsx'
 import WireTable from './pages/tools/WireTable.jsx'
@@ -37,6 +38,7 @@ import SymptomQuiz from './pages/tools/SymptomQuiz.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
 import MyCourse from './pages/more/MyCourse.jsx'
+import BusinessCard from './pages/more/BusinessCard.jsx'
 import Favorites from './pages/more/Favorites.jsx'
 import About from './pages/more/About.jsx'
 import Appearance from './pages/more/Appearance.jsx'
@@ -67,6 +69,7 @@ export default function App() {
           <Route path="/trainer/second" element={<SenseSecond />} />
           <Route path="/trainer/unison" element={<MergeUnison />} />
           <Route path="/trainer/temperament" element={<TemperamentTrainer />} />
+          <Route path="/trainer/ear-diagnostics" element={<EarDiagnostics />} />
 
           <Route path="/tools" element={<ToolsHome />} />
           <Route path="/tools/wire" element={<WireTable />} />
@@ -87,6 +90,7 @@ export default function App() {
 
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/course" element={<MyCourse />} />
+          <Route path="/more/business-card" element={<BusinessCard />} />
           <Route path="/more/favorites" element={<Favorites />} />
           <Route path="/more/appearance" element={<Appearance />} />
           <Route path="/more/about" element={<About />} />

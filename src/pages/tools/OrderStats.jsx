@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
-import { orderTotal } from '../../utils/orderTotal.js'
+import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
+import orderOperations from '../../data/orderOperations.js'
 
 const MONTH_NAMES = [
   'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
@@ -41,6 +42,13 @@ function endOfDay(d) {
   return nd
 }
 
+function timeToMin(t) {
+  if (!t) return null
+  const [h, m] = t.split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return null
+  return h * 60 + m
+}
+
 export default function OrderStats() {
   const navigate = useNavigate()
   const [items] = useLocalStorage('pt_my_orders_v1', [])
@@ -50,18 +58,21 @@ export default function OrderStats() {
   const [customTo, setCustomTo] = useState(() => toDateInput(new Date()))
 
   const priced = items
-    .map((it) => ({ ...it, total: orderTotal(it) }))
+    .map((it) => ({ ...it, total: orderTotal(it), expenses: orderExpenses(it), profit: orderProfit(it) }))
     .filter((it) => it.total > 0)
 
   const grandTotal = priced.reduce((sum, it) => sum + it.total, 0)
+  const grandExpenses = priced.reduce((sum, it) => sum + it.expenses, 0)
+  const grandProfit = grandTotal - grandExpenses
   const avgCheck = priced.length ? Math.round(grandTotal / priced.length) : 0
 
   const byMonth = {}
   priced.forEach((it) => {
     if (!it.date) return
     const key = monthKey(it.date)
-    if (!byMonth[key]) byMonth[key] = { sum: 0, count: 0 }
+    if (!byMonth[key]) byMonth[key] = { sum: 0, expenses: 0, count: 0 }
     byMonth[key].sum += it.total
+    byMonth[key].expenses += it.expenses
     byMonth[key].count += 1
   })
   const months = Object.keys(byMonth).sort().reverse()
@@ -102,6 +113,46 @@ export default function OrderStats() {
     return d >= rangeStart && d <= rangeEnd
   })
   const rangeSum = inRange.reduce((sum, it) => sum + it.total, 0)
+  const rangeExpenses = inRange.reduce((sum, it) => sum + it.expenses, 0)
+  const rangeProfit = rangeSum - rangeExpenses
+
+  const opStats = useMemo(() => {
+    const withChecklist = items.filter((it) => it.checklist && Object.values(it.checklist).some(Boolean))
+    const total = withChecklist.length
+    return orderOperations
+      .map((op) => {
+        const count = withChecklist.filter((it) => it.checklist[op.id]).length
+        return { ...op, count, pct: total ? Math.round((count / total) * 100) : 0 }
+      })
+      .sort((a, b) => a.pct - b.pct)
+  }, [items])
+  const opStatsTotal = items.filter((it) => it.checklist && Object.values(it.checklist).some(Boolean)).length
+  const blindSpots = opStats.filter((op) => op.pct <= 25 && op.count > 0)
+
+  const roadMinutes = useMemo(() => {
+    if (!rangeStart || !rangeEnd) return 0
+    const byDate = {}
+    items.forEach((it) => {
+      if (!it.date || !it.time) return
+      const d = new Date(`${it.date}T00:00:00`)
+      if (d < rangeStart || d > rangeEnd) return
+      if (!byDate[it.date]) byDate[it.date] = []
+      byDate[it.date].push(it)
+    })
+    let total = 0
+    Object.values(byDate).forEach((dayItems) => {
+      const sorted = [...dayItems].sort((a, b) => a.time.localeCompare(b.time))
+      for (let i = 0; i < sorted.length - 1; i++) {
+        const endMin = timeToMin(sorted[i].actualEndTime) ?? timeToMin(sorted[i].endTime) ?? timeToMin(sorted[i].time)
+        const nextStartMin = timeToMin(sorted[i + 1].time)
+        if (endMin != null && nextStartMin != null && nextStartMin > endMin) {
+          total += nextStartMin - endMin
+        }
+      }
+    })
+    return total
+  }, [items, rangeStart, rangeEnd])
+  const roadHoursLabel = `${Math.floor(roadMinutes / 60)} ч ${roadMinutes % 60} мин`
 
   return (
     <div>
@@ -159,20 +210,41 @@ export default function OrderStats() {
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
               {rangeLabel} · {inRange.length} {inRange.length === 1 ? 'заказ' : 'заказов'}
             </div>
+            {rangeExpenses > 0 && (
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>
+                расходы: {rangeExpenses.toLocaleString('ru-RU')} ₽ · прибыль: {rangeProfit.toLocaleString('ru-RU')} ₽
+              </div>
+            )}
+            {roadMinutes > 0 && (
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>
+                🚗 в разъездах между визитами: ~{roadHoursLabel}
+              </div>
+            )}
+          </div>
+
+          <div className="row" style={{ gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+            <div className="card" style={{ flex: '1 1 30%', textAlign: 'center' }}>
+              <div className="big-number" style={{ fontSize: 22 }}>{grandTotal.toLocaleString('ru-RU')} ₽</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>всего заработано</div>
+            </div>
+            <div className="card" style={{ flex: '1 1 30%', textAlign: 'center' }}>
+              <div className="big-number" style={{ fontSize: 22 }}>{avgCheck.toLocaleString('ru-RU')} ₽</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>средний чек</div>
+            </div>
+            <div className="card" style={{ flex: '1 1 30%', textAlign: 'center' }}>
+              <div className="big-number" style={{ fontSize: 22 }}>{priced.length}</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>заказов с ценой</div>
+            </div>
           </div>
 
           <div className="row" style={{ gap: 10, marginBottom: 16 }}>
             <div className="card" style={{ flex: 1, textAlign: 'center' }}>
-              <div className="big-number" style={{ fontSize: 22 }}>{grandTotal.toLocaleString('ru-RU')} ₽</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>всего заработано</div>
+              <div className="big-number" style={{ fontSize: 22 }}>{grandExpenses.toLocaleString('ru-RU')} ₽</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>расходы на материалы</div>
             </div>
             <div className="card" style={{ flex: 1, textAlign: 'center' }}>
-              <div className="big-number" style={{ fontSize: 22 }}>{avgCheck.toLocaleString('ru-RU')} ₽</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>средний чек</div>
-            </div>
-            <div className="card" style={{ flex: 1, textAlign: 'center' }}>
-              <div className="big-number" style={{ fontSize: 22 }}>{priced.length}</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>заказов с ценой</div>
+              <div className="big-number" style={{ fontSize: 22 }}>{grandProfit.toLocaleString('ru-RU')} ₽</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>чистая прибыль</div>
             </div>
           </div>
 
@@ -183,11 +255,27 @@ export default function OrderStats() {
                 <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{monthLabel(key)}</div>
                 <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
                   {byMonth[key].count} {byMonth[key].count === 1 ? 'заказ' : 'заказа'}
+                  {byMonth[key].expenses > 0 ? ` · прибыль ${(byMonth[key].sum - byMonth[key].expenses).toLocaleString('ru-RU')} ₽` : ''}
                 </div>
               </div>
               <div style={{ fontWeight: 700 }}>{byMonth[key].sum.toLocaleString('ru-RU')} ₽</div>
             </div>
           ))}
+
+          {opStatsTotal >= 3 && blindSpots.length > 0 && (
+            <>
+              <h3 style={{ marginBottom: 8 }}>Слепые зоны</h3>
+              <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: -4, marginBottom: 8 }}>
+                Эти операции реже всего попадают в чек-лист — возможно, вы иногда упускаете их из виду.
+              </p>
+              {blindSpots.map((op) => (
+                <div key={op.id} className="card row" style={{ alignItems: 'center' }}>
+                  <span>{op.title}</span>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{op.pct}% заказов ({op.count})</span>
+                </div>
+              ))}
+            </>
+          )}
         </>
       )}
     </div>

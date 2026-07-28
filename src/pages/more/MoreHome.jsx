@@ -16,6 +16,10 @@ export default function MoreHome() {
         <span className="row-start">🎨 <span>Оформление</span></span>
         <span>›</span>
       </Link>
+      <Link to="/more/business-card" className="card-tap row">
+        <span className="row-start">💳 <span>Визитка мастера</span></span>
+        <span>›</span>
+      </Link>
       <Link to="/more/backup" className="card-tap row">
         <span className="row-start">💾 <span>Резервная копия</span></span>
         <span>›</span>
