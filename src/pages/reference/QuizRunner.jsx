@@ -24,6 +24,7 @@ export default function QuizRunner() {
   const [results, setResults] = useLocalStorage('pt_quiz_results_v1', {})
   const [quote, setQuote] = useState(null)
   const [courseJustCompleted, setCourseJustCompleted] = useState(false)
+  const [wrongAnswers, setWrongAnswers] = useState([])
 
   if (!lecture || questions.length === 0) {
     return <div className="empty-state">Тест не найден.</div>
@@ -54,6 +55,12 @@ export default function QuizRunner() {
   }
 
   const next = () => {
+    const wrongEntry = selected !== question.correctIndex
+      ? { q: question.q, correct: question.options[question.correctIndex] }
+      : null
+    const updatedWrong = wrongEntry ? [...wrongAnswers, wrongEntry] : wrongAnswers
+    setWrongAnswers(updatedWrong)
+
     if (isLast) {
       const finalScore = score
       const prevBest = results[lectureId]
@@ -87,6 +94,7 @@ export default function QuizRunner() {
     setScore(0)
     setFinished(false)
     setQuote(null)
+    setWrongAnswers([])
   }
 
   if (finished && courseJustCompleted) {
@@ -120,7 +128,25 @@ export default function QuizRunner() {
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>— {quote.author}</div>
           </div>
         )}
-        <button className="btn btn-block btn-primary" onClick={restart}>Пройти ещё раз</button>
+
+        {wrongAnswers.length > 0 && (
+          <>
+            <div className="section-label">Стоит повторить</div>
+            <div className="card">
+              {wrongAnswers.map((w, i) => (
+                <div key={i} style={{ marginBottom: i < wrongAnswers.length - 1 ? 12 : 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{w.q}</div>
+                  <div style={{ color: 'var(--success)', fontSize: 13, marginTop: 2 }}>Правильно: {w.correct}</div>
+                </div>
+              ))}
+            </div>
+            <button className="btn btn-block" onClick={() => navigate(`/reference/${lectureId}`)}>
+              Повторить материал лекции
+            </button>
+          </>
+        )}
+
+        <button className="btn btn-block btn-primary" style={{ marginTop: 10 }} onClick={restart}>Пройти ещё раз</button>
         <button className="btn btn-block" style={{ marginTop: 10 }} onClick={() => navigate('/reference/quiz')}>
           К списку тестов
         </button>

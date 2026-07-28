@@ -10,6 +10,21 @@ function formatUnlockDate(iso) {
     ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 }
 
+function daysUntil(iso) {
+  if (!iso) return null
+  const diffMs = new Date(iso) - new Date()
+  if (diffMs <= 0) return 0
+  return Math.ceil(diffMs / 86400000)
+}
+
+function pluralDays(n) {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return `${n} день`
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return `${n} дня`
+  return `${n} дней`
+}
+
 function dayOfYear() {
   const now = new Date()
   const start = new Date(now.getFullYear(), 0, 0)
@@ -18,7 +33,7 @@ function dayOfYear() {
 }
 
 export default function ReferenceHome() {
-  const { status, isLectureUnlocked, unlockDateFor, lockReason, passedCount, totalLectures } = useCourseProgress()
+  const { status, isLectureUnlocked, unlockDateFor, lockReason, testsPassed, passedCount, totalLectures } = useCourseProgress()
   const isNovice = status === 'novice'
 
   const termOfDay = glossary.length > 0 ? glossary[dayOfYear() % glossary.length] : null
@@ -62,35 +77,42 @@ export default function ReferenceHome() {
       </Link>
 
       <div className="section-label">Лекции</div>
-      {lectures.map((l) => {
-        const unlocked = isLectureUnlocked(l.id)
-        if (!unlocked) {
+      <div className="lecture-stepper">
+        {lectures.map((l) => {
+          const unlocked = isLectureUnlocked(l.id)
+          const done = !!testsPassed[l.id]
+          const dotClass = done ? 'done' : unlocked ? 'current' : 'locked'
+          const dotContent = done ? '✓' : unlocked ? l.num : '🔒'
+
+          const body = !unlocked ? (
+            <div>
+              <div>{l.title}</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 2 }}>
+                {lockReason(l.id) === 'prev_test'
+                  ? 'сначала пройдите тест предыдущей темы'
+                  : `откроется ${formatUnlockDate(unlockDateFor(l.id))}${
+                      daysUntil(unlockDateFor(l.id)) > 0 ? ` · через ${pluralDays(daysUntil(unlockDateFor(l.id)))}` : ''
+                    }`}
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontWeight: done ? 400 : 700 }}>{l.title}</div>
+          )
+
           return (
-            <div key={l.id} className="card-tap row" style={{ opacity: 0.55, cursor: 'default' }}>
-              <span className="row-start">
-                <span className="pill badge-accent">{l.num}</span>
-                <span>
-                  <div>{l.title}</div>
-                  <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 2 }}>
-                    {lockReason(l.id) === 'prev_test'
-                      ? '🔒 сначала пройдите тест предыдущей темы'
-                      : `🔒 откроется ${formatUnlockDate(unlockDateFor(l.id))}`}
-                  </div>
-                </span>
-              </span>
+            <div key={l.id} className="stepper-item">
+              <div className={`stepper-dot ${dotClass}`}>{dotContent}</div>
+              {unlocked ? (
+                <Link to={`/reference/${l.id}`} className="stepper-body" style={{ color: 'inherit' }}>
+                  {body}
+                </Link>
+              ) : (
+                <div className="stepper-body" style={{ opacity: 0.7 }}>{body}</div>
+              )}
             </div>
           )
-        }
-        return (
-          <Link key={l.id} to={`/reference/${l.id}`} className="card-tap row">
-            <span className="row-start">
-              <span className="pill badge-accent">{l.num}</span>
-              <span>{l.title}</span>
-            </span>
-            <span>›</span>
-          </Link>
-        )
-      })}
+        })}
+      </div>
     </div>
   )
 }

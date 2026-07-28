@@ -4,7 +4,7 @@ import lectures from '../../data/lectures.js'
 import { useFavorites } from '../../hooks/useFavorites.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
 
-const TRAINER_LINKS = {
+const PRACTICE_LINKS = {
   l2: [
     { to: '/trainer/listen', icon: '🌊', label: 'Послушать биения' },
     { to: '/trainer/count', icon: '🔢', label: 'Посчитай биения' },
@@ -12,6 +12,16 @@ const TRAINER_LINKS = {
   l3: [
     { to: '/trainer/unison', icon: '🎯', label: 'Сведи унисон' },
     { to: '/trainer/temperament', icon: '🎼', label: 'Темперация по кругу квинт' },
+  ],
+  l4: [
+    { to: '/tools/work-order', icon: '📋', label: 'Порядок работ на выезде' },
+  ],
+  l8: [
+    { to: '/tools/symptom-quiz', icon: '🩺', label: 'Тест по симптомам и шумам' },
+  ],
+  l9: [
+    { to: '/tools/diagnostic', icon: '🔍', label: 'Чек-лист диагностики' },
+    { to: '/tools/common-mistakes', icon: '⚠️', label: 'Частые ошибки новичка' },
   ],
 }
 
@@ -48,7 +58,7 @@ export default function LectureView() {
     )
   }
 
-  const trainerLinks = TRAINER_LINKS[lecture.id]
+  const practiceLinks = PRACTICE_LINKS[lecture.id]
 
   return (
     <div>
@@ -71,10 +81,10 @@ export default function LectureView() {
         </div>
       ))}
 
-      {trainerLinks && (
+      {practiceLinks && (
         <>
           <div className="section-label">Практика по теме</div>
-          {trainerLinks.map((t) => (
+          {practiceLinks.map((t) => (
             <Link key={t.to} to={t.to} className="card-tap row">
               <span className="row-start">{t.icon} <span>{t.label}</span></span>
               <span>›</span>

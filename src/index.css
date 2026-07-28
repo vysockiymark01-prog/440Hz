@@ -386,3 +386,56 @@ table.wire-table th { color: var(--text-dim); font-weight: 600; font-size: 12px;
   border-color: var(--danger) !important;
   background: var(--danger-soft-bg) !important;
 }
+
+.lecture-stepper {
+  display: flex;
+  flex-direction: column;
+}
+.stepper-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  position: relative;
+}
+.stepper-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 34px;
+  bottom: -10px;
+  width: 2px;
+  background: var(--border);
+}
+.stepper-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  color: var(--text-dim);
+  z-index: 1;
+}
+.stepper-dot.done {
+  background: var(--success-soft-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+.stepper-dot.current {
+  background: var(--accent-soft-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.stepper-dot.locked {
+  opacity: 0.7;
+}
+.stepper-body {
+  flex: 1;
+  padding-top: 3px;
+}
