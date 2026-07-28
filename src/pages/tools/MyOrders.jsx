@@ -68,8 +68,6 @@ function buildIcs(order) {
     })
     descriptionParts.push(`Операции:\n${lines.join('\n')}`)
   }
-  const todo = orderOperations.filter((s) => !order.checklist?.[s.id]).map((s) => s.title)
-  if (todo.length) descriptionParts.push(`Не сделано: ${todo.join(', ')}`)
   const total = orderTotal(order)
   if (total > 0) descriptionParts.push(`Итого: ${total} ₽`)
   if (order.note) descriptionParts.push(`Заметка: ${order.note}`)
@@ -161,6 +159,49 @@ function dateTimeLabel(dateStr, timeStr, endTimeStr) {
   return { text: `${datePart}${timePart} · ${relative}`, past: diffDays < 0 }
 }
 
+function ChecklistFields({ checklist, prices, onToggle, onPriceChange }) {
+  return (
+    <div>
+      {orderOperations.map((s, i) => (
+        <div
+          key={s.id}
+          className="row"
+          style={{
+            alignItems: 'center',
+            gap: 8,
+            padding: '9px 0',
+            borderBottom: i < orderOperations.length - 1 ? '1px solid var(--border)' : 'none',
+          }}
+        >
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, margin: 0, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={!!checklist?.[s.id]}
+              onChange={() => onToggle(s.id)}
+              style={{ width: 18, height: 18, accentColor: 'var(--accent)', flexShrink: 0 }}
+            />
+            <span
+              style={{
+                color: checklist?.[s.id] ? 'var(--text)' : 'var(--text-dim)',
+              }}
+            >
+              {s.title}
+            </span>
+          </label>
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="₽"
+            value={prices?.[s.id] ?? ''}
+            onChange={(e) => onPriceChange(s.id, e.target.value)}
+            style={{ width: 84, flexShrink: 0, textAlign: 'right' }}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function MyOrders() {
   const navigate = useNavigate()
   const [items, setItems] = useLocalStorage('pt_my_orders_v1', [])
@@ -173,6 +214,24 @@ export default function MyOrders() {
   const [endTime, setEndTime] = useState('')
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(null)
+  const [formChecklist, setFormChecklist] = useState({})
+  const [formPrices, setFormPrices] = useState({})
+
+  const toggleFormChecklistItem = (opId) => {
+    setFormChecklist((prev) => {
+      const wasChecked = !!prev[opId]
+      if (!wasChecked && formPrices[opId] === undefined) {
+        const op = orderOperations.find((o) => o.id === opId)
+        setFormPrices((p) => ({ ...p, [opId]: op?.defaultPrice ?? '' }))
+      }
+      return { ...prev, [opId]: !wasChecked }
+    })
+  }
+
+  const setFormPrice = (opId, value) => {
+    const num = value === '' ? '' : Number(value)
+    setFormPrices((prev) => ({ ...prev, [opId]: num }))
+  }
 
   const addItem = () => {
     if (!brand.trim() && !clientName.trim()) return
@@ -186,8 +245,8 @@ export default function MyOrders() {
       time,
       endTime,
       note: note.trim(),
-      checklist: {},
-      prices: {},
+      checklist: formChecklist,
+      prices: formPrices,
     }
     setItems((prev) => [...prev, entry])
     setBrand('')
@@ -198,6 +257,8 @@ export default function MyOrders() {
     setTime('')
     setEndTime('')
     setNote('')
+    setFormChecklist({})
+    setFormPrices({})
   }
 
   const removeItem = (id) => {
@@ -327,7 +388,18 @@ export default function MyOrders() {
           </label>
           <input type="text" placeholder="например, особенности инструмента" value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
-        <button className="btn btn-block btn-primary" onClick={addItem} disabled={!brand.trim() && !clientName.trim()}>
+
+        <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
+          Какие работы планируются
+        </label>
+        <ChecklistFields
+          checklist={formChecklist}
+          prices={formPrices}
+          onToggle={toggleFormChecklistItem}
+          onPriceChange={setFormPrice}
+        />
+
+        <button className="btn btn-block btn-primary" style={{ marginTop: 12 }} onClick={addItem} disabled={!brand.trim() && !clientName.trim()}>
           Добавить
         </button>
       </div>
@@ -359,7 +431,27 @@ export default function MyOrders() {
                   </div>
                 )}
                 {it.address && (
-                  <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 2 }}>{it.address}</div>
+                  <div style={{ marginTop: 2 }}>
+                    <div style={{ color: 'var(--text-faint)', fontSize: 13 }}>{it.address}</div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <a
+                        className="btn btn-sm"
+                        href={`https://2gis.ru/search/${encodeURIComponent(it.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        2ГИС
+                      </a>
+                      <a
+                        className="btn btn-sm"
+                        href={`https://yandex.ru/maps/?text=${encodeURIComponent(it.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Я.Карты
+                      </a>
+                    </div>
+                  </div>
                 )}
                 {it.note && <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 4 }}>{it.note}</div>}
                 <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -379,43 +471,12 @@ export default function MyOrders() {
 
             {isOpen && (
               <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                {orderOperations.map((s, i) => (
-                  <div
-                    key={s.id}
-                    className="row"
-                    style={{
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '9px 0',
-                      borderBottom: i < orderOperations.length - 1 ? '1px solid var(--border)' : 'none',
-                    }}
-                  >
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, margin: 0, cursor: 'pointer' }}>
-                      <input
-                        type="checkbox"
-                        checked={!!it.checklist?.[s.id]}
-                        onChange={() => toggleChecklistItem(it.id, s.id)}
-                        style={{ width: 18, height: 18, accentColor: 'var(--accent)', flexShrink: 0 }}
-                      />
-                      <span
-                        style={{
-                          color: it.checklist?.[s.id] ? 'var(--text-faint)' : 'var(--text)',
-                          textDecoration: it.checklist?.[s.id] ? 'line-through' : 'none',
-                        }}
-                      >
-                        {s.title}
-                      </span>
-                    </label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      placeholder="₽"
-                      value={it.prices?.[s.id] ?? ''}
-                      onChange={(e) => setOpPrice(it.id, s.id, e.target.value)}
-                      style={{ width: 84, flexShrink: 0, textAlign: 'right' }}
-                    />
-                  </div>
-                ))}
+                <ChecklistFields
+                  checklist={it.checklist}
+                  prices={it.prices}
+                  onToggle={(opId) => toggleChecklistItem(it.id, opId)}
+                  onPriceChange={(opId, value) => setOpPrice(it.id, opId, value)}
+                />
                 <div className="row" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontWeight: 700 }}>
                   <span>Итого</span>
                   <span>{total.toLocaleString('ru-RU')} ₽</span>

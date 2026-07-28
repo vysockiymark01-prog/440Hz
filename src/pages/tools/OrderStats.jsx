@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { orderTotal } from '../../utils/orderTotal.js'
@@ -17,9 +18,36 @@ function monthLabel(key) {
   return `${MONTH_NAMES[month - 1]} ${year}`
 }
 
+function pad(n) {
+  return String(n).padStart(2, '0')
+}
+
+function toDateInput(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+function startOfWeek(d) {
+  const day = d.getDay()
+  const diff = (day === 0 ? -6 : 1) - day
+  const monday = new Date(d)
+  monday.setDate(d.getDate() + diff)
+  monday.setHours(0, 0, 0, 0)
+  return monday
+}
+
+function endOfDay(d) {
+  const nd = new Date(d)
+  nd.setHours(23, 59, 59, 999)
+  return nd
+}
+
 export default function OrderStats() {
   const navigate = useNavigate()
   const [items] = useLocalStorage('pt_my_orders_v1', [])
+  const [rangeMode, setRangeMode] = useState('week') // 'week' | 'month' | 'custom'
+  const today = useMemo(() => new Date(), [])
+  const [customFrom, setCustomFrom] = useState(() => toDateInput(startOfWeek(new Date())))
+  const [customTo, setCustomTo] = useState(() => toDateInput(new Date()))
 
   const priced = items
     .map((it) => ({ ...it, total: orderTotal(it) }))
@@ -38,6 +66,43 @@ export default function OrderStats() {
   })
   const months = Object.keys(byMonth).sort().reverse()
 
+  const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
+    if (rangeMode === 'week') {
+      const start = startOfWeek(today)
+      const end = endOfDay(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6))
+      return {
+        rangeStart: start,
+        rangeEnd: end,
+        rangeLabel: `неделя ${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`,
+      }
+    }
+    if (rangeMode === 'month') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1)
+      const end = endOfDay(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+      return {
+        rangeStart: start,
+        rangeEnd: end,
+        rangeLabel: monthLabel(monthKey(start)),
+      }
+    }
+    const start = customFrom ? new Date(`${customFrom}T00:00:00`) : null
+    const end = customTo ? endOfDay(new Date(`${customTo}T00:00:00`)) : null
+    return {
+      rangeStart: start,
+      rangeEnd: end,
+      rangeLabel: start && end
+        ? `${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })} – ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}`
+        : 'выберите даты',
+    }
+  }, [rangeMode, today, customFrom, customTo])
+
+  const inRange = priced.filter((it) => {
+    if (!it.date || !rangeStart || !rangeEnd) return false
+    const d = new Date(`${it.date}T00:00:00`)
+    return d >= rangeStart && d <= rangeEnd
+  })
+  const rangeSum = inRange.reduce((sum, it) => sum + it.total, 0)
+
   return (
     <div>
       <button className="back-link" onClick={() => navigate('/tools/my-orders')}>‹ Мои заказы</button>
@@ -52,6 +117,50 @@ export default function OrderStats() {
         </div>
       ) : (
         <>
+          <div className="theme-options" style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+            <button
+              className={`theme-option ${rangeMode === 'week' ? 'active' : ''}`}
+              style={{ flex: 1, textAlign: 'center', padding: '10px 6px' }}
+              onClick={() => setRangeMode('week')}
+            >
+              Эта неделя
+            </button>
+            <button
+              className={`theme-option ${rangeMode === 'month' ? 'active' : ''}`}
+              style={{ flex: 1, textAlign: 'center', padding: '10px 6px' }}
+              onClick={() => setRangeMode('month')}
+            >
+              Этот месяц
+            </button>
+            <button
+              className={`theme-option ${rangeMode === 'custom' ? 'active' : ''}`}
+              style={{ flex: 1, textAlign: 'center', padding: '10px 6px' }}
+              onClick={() => setRangeMode('custom')}
+            >
+              Свой период
+            </button>
+          </div>
+
+          {rangeMode === 'custom' && (
+            <div className="row" style={{ gap: 10, marginBottom: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>С</label>
+                <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>По</label>
+                <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          <div className="card" style={{ textAlign: 'center', marginBottom: 16 }}>
+            <div className="big-number">{rangeSum.toLocaleString('ru-RU')} ₽</div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
+              {rangeLabel} · {inRange.length} {inRange.length === 1 ? 'заказ' : 'заказов'}
+            </div>
+          </div>
+
           <div className="row" style={{ gap: 10, marginBottom: 16 }}>
             <div className="card" style={{ flex: 1, textAlign: 'center' }}>
               <div className="big-number" style={{ fontSize: 22 }}>{grandTotal.toLocaleString('ru-RU')} ₽</div>
