@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import QRCode from 'qrcode'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 
 function buildVCard(card) {
@@ -11,6 +12,15 @@ function buildVCard(card) {
   if (card.note) lines.push(`NOTE:${card.note.replace(/\n/g, '\\n')}`)
   lines.push('END:VCARD')
   return lines.join('\r\n')
+}
+
+function buildSummary(card) {
+  const parts = ['Визитка настройщика фортепиано']
+  if (card.name) parts.push(card.name)
+  if (card.phone) parts.push(`Тел.: ${card.phone}`)
+  if (card.email) parts.push(`Email: ${card.email}`)
+  if (card.city) parts.push(`Город: ${card.city}`)
+  return parts.join('\n')
 }
 
 function downloadVCard(card) {
@@ -26,8 +36,14 @@ function downloadVCard(card) {
   URL.revokeObjectURL(url)
 }
 
-async function shareVCard(card) {
+// Пробует поделиться файлом .vcf, затем текстом, и только если оба способа
+// недоступны или дали сбой (а не просто отмену пользователем) — копирует
+// сводку в буфер обмена, чтобы кнопка никогда не оставалась «немой».
+async function shareVCard(card, setStatus) {
+  setStatus(null)
   const vcf = buildVCard(card)
+  const summary = buildSummary(card)
+
   if (navigator.canShare && navigator.share) {
     try {
       const file = new File([vcf], `${card.name || 'vizitka'}.vcf`, { type: 'text/vcard' })
@@ -35,26 +51,30 @@ async function shareVCard(card) {
         await navigator.share({ files: [file], title: 'Визитка', text: card.name })
         return
       }
-    } catch {
-      /* откатываемся на текстовый вариант ниже */
+    } catch (err) {
+      if (err?.name === 'AbortError') return
     }
   }
-  const textParts = ['Визитка настройщика фортепиано']
-  if (card.name) textParts.push(card.name)
-  if (card.phone) textParts.push(`Тел.: ${card.phone}`)
-  if (card.email) textParts.push(`Email: ${card.email}`)
-  if (card.city) textParts.push(`Город: ${card.city}`)
+
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Визитка', text: textParts.join('\n') })
+      await navigator.share({ title: 'Визитка', text: summary })
+      return
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+    }
+  }
+
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(summary)
+      setStatus({ type: 'good', text: 'Отправка через это приложение недоступна — визитка скопирована в буфер обмена. Или покажите клиенту QR-код ниже.' })
       return
     } catch {
-      /* пользователь отменил */
+      /* переходим к сообщению об ошибке ниже */
     }
-  } else if (navigator.clipboard) {
-    await navigator.clipboard.writeText(textParts.join('\n'))
-    alert('Визитка скопирована в буфер обмена')
   }
+  setStatus({ type: 'bad', text: 'Отправка недоступна в этом браузере. Покажите клиенту QR-код ниже или скачайте файл .vcf.' })
 }
 
 export default function BusinessCard() {
@@ -63,6 +83,8 @@ export default function BusinessCard() {
     name: '', phone: '', email: '', city: '', note: '',
   })
   const [draft, setDraft] = useState(card)
+  const [status, setStatus] = useState(null)
+  const [qrUrl, setQrUrl] = useState(null)
 
   const save = () => setCard(draft)
   const field = (key, label, type = 'text', placeholder = '') => (
@@ -80,13 +102,25 @@ export default function BusinessCard() {
 
   const hasData = card.name || card.phone
 
+  useEffect(() => {
+    if (!hasData) {
+      setQrUrl(null)
+      return
+    }
+    let cancelled = false
+    QRCode.toDataURL(buildVCard(card), { width: 240, margin: 1 })
+      .then((url) => { if (!cancelled) setQrUrl(url) })
+      .catch(() => { if (!cancelled) setQrUrl(null) })
+    return () => { cancelled = true }
+  }, [card, hasData])
+
   return (
     <div>
       <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
       <h1 className="screen-title">Визитка мастера</h1>
       <p className="screen-subtitle">
-        Заполните свои контакты один раз — потом можно отправить визитку клиенту одним нажатием
-        (файл .vcf добавляется в контакты телефона автоматически).
+        Заполните свои контакты один раз — потом можно отправить визитку клиенту или показать QR-код,
+        который камера телефона распознает как контакт.
       </p>
 
       <div className="card">
@@ -98,10 +132,29 @@ export default function BusinessCard() {
       </div>
 
       {hasData && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button className="btn btn-block btn-primary" onClick={() => shareVCard(card)}>📤 Отправить клиенту</button>
-          <button className="btn" onClick={() => downloadVCard(card)}>⬇️ .vcf</button>
-        </div>
+        <>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button className="btn btn-block btn-primary" onClick={() => shareVCard(card, setStatus)}>📤 Отправить клиенту</button>
+            <button className="btn" onClick={() => downloadVCard(card)}>⬇️ .vcf</button>
+          </div>
+
+          {status && (
+            <div className={`result-flash ${status.type === 'good' ? 'good' : 'bad'}`} style={{ marginTop: 12 }}>
+              {status.text}
+            </div>
+          )}
+
+          {qrUrl && (
+            <div className="card" style={{ textAlign: 'center', marginTop: 16 }}>
+              <div style={{ fontWeight: 700, marginBottom: 10 }}>QR-код визитки</div>
+              <img src={qrUrl} alt="QR-код визитки" style={{ width: 200, height: 200, borderRadius: 8 }} />
+              <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 10 }}>
+                Дайте клиенту навести камеру телефона — большинство камер сами предложат добавить контакт.
+                Работает даже без интернета и без «Поделиться».
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
