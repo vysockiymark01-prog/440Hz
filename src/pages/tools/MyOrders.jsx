@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import orderOperations from '../../data/orderOperations.js'
@@ -43,8 +43,46 @@ function getOverdueClients(items) {
   })
   const now = new Date()
   return Object.values(groups)
-    .filter((g) => (now - new Date(g.latest)) / 86400000 >= 365)
+    .filter((g) => (now - new Date(g.latest)) / 86400000 >= 270)
     .sort((a, b) => new Date(a.latest) - new Date(b.latest))
+}
+
+function getTodayOrders(items) {
+  const todayStr = new Date().toISOString().slice(0, 10)
+  return items
+    .filter((it) => it.date === todayStr)
+    .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+}
+
+async function shareEstimate(order) {
+  const included = orderOperations.filter((s) => order.checklist?.[s.id])
+  const lines = included.map((s) => {
+    const price = order.prices?.[s.id]
+    const priceText = typeof price === 'number' && !Number.isNaN(price) && price > 0 ? ` — ${price} ₽` : ''
+    return `• ${s.title}${priceText}`
+  })
+  const total = orderTotal(order)
+  const headerParts = ['Смета']
+  if (order.clientName) headerParts.push(`для ${order.clientName}`)
+  if (order.brand) headerParts.push(`(${order.brand})`)
+  const parts = [headerParts.join(' '), '', ...lines]
+  if (total > 0) parts.push('', `Итого: ${total.toLocaleString('ru-RU')} ₽`)
+  const text = parts.join('\n')
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Смета', text })
+    } catch {
+      /* пользователь отменил — ничего не делаем */
+    }
+  } else if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(text)
+      alert('Смета скопирована в буфер обмена')
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 function buildIcs(order) {
@@ -216,6 +254,9 @@ export default function MyOrders() {
   const [expanded, setExpanded] = useState(null)
   const [formChecklist, setFormChecklist] = useState({})
   const [formPrices, setFormPrices] = useState({})
+  const [search, setSearch] = useState('')
+  const [filterMode, setFilterMode] = useState('all') // 'all' | 'upcoming' | 'past'
+  const formCardRef = useRef(null)
 
   const toggleFormChecklistItem = (opId) => {
     setFormChecklist((prev) => {
@@ -265,6 +306,20 @@ export default function MyOrders() {
     setItems((prev) => prev.filter((it) => it.id !== id))
   }
 
+  const repeatOrder = (it) => {
+    setBrand(it.brand || '')
+    setClientName(it.clientName || '')
+    setPhone(it.phone || '')
+    setAddress(it.address || '')
+    setDate('')
+    setTime('')
+    setEndTime('')
+    setNote('')
+    setFormChecklist({})
+    setFormPrices({})
+    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const toggleChecklistItem = (orderId, opId) => {
     setItems((prev) =>
       prev.map((it) => {
@@ -297,7 +352,20 @@ export default function MyOrders() {
     return new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`)
   })
 
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const filtered = sorted.filter((it) => {
+    if (filterMode === 'upcoming' && (!it.date || it.date < todayStr)) return false
+    if (filterMode === 'past' && (!it.date || it.date >= todayStr)) return false
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      const haystack = [it.clientName, it.phone, it.address, it.brand, it.note].filter(Boolean).join(' ').toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
+    return true
+  })
+
   const overdueClients = getOverdueClients(items)
+  const todayOrders = getTodayOrders(items)
 
   return (
     <div>
@@ -316,10 +384,26 @@ export default function MyOrders() {
         экспортировать в календарь телефона или планшета. Хранится только на этом устройстве.
       </p>
 
+      {todayOrders.length > 0 && (
+        <div className="card" style={{ borderColor: 'var(--accent)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>
+            📅 Сегодня {todayOrders.length === 1 ? 'визит' : `визитов: ${todayOrders.length}`}
+          </div>
+          {todayOrders.map((o) => (
+            <div key={o.id} className="row" style={{ padding: '6px 0', fontSize: 13, alignItems: 'flex-start' }}>
+              <span>
+                {o.time && <b>{o.time}</b>}{o.time ? ' — ' : ''}{o.clientName || o.brand || 'Без имени'}
+              </span>
+              {o.address && <span style={{ color: 'var(--text-dim)', textAlign: 'right' }}>{o.address}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
       {overdueClients.length > 0 && (
         <div className="card" style={{ borderColor: 'var(--accent)' }}>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            ⏰ {overdueClients.length} {overdueClients.length === 1 ? 'клиент не настраивался' : 'клиентов не настраивались'} больше года
+            ⏰ {overdueClients.length} {overdueClients.length === 1 ? 'клиента пора пригласить' : 'клиентов пора пригласить'} на повторную настройку
           </div>
           {overdueClients.map((g) => {
             const monthsAgo = Math.floor((new Date() - new Date(g.latest)) / 86400000 / 30)
@@ -336,7 +420,7 @@ export default function MyOrders() {
         </div>
       )}
 
-      <div className="card">
+      <div className="card" ref={formCardRef}>
         <h3 style={{ marginTop: 0 }}>Добавить заказ</h3>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
@@ -404,11 +488,49 @@ export default function MyOrders() {
         </button>
       </div>
 
-      {sorted.length === 0 && (
-        <div className="empty-state">Список пуст — добавьте первый заказ выше.</div>
+      {items.length > 0 && (
+        <>
+          <input
+            type="text"
+            placeholder="Поиск по имени, телефону, адресу…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ marginBottom: 10 }}
+          />
+          <div className="theme-options" style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+            <button
+              className={`theme-option ${filterMode === 'all' ? 'active' : ''}`}
+              style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
+              onClick={() => setFilterMode('all')}
+            >
+              Все
+            </button>
+            <button
+              className={`theme-option ${filterMode === 'upcoming' ? 'active' : ''}`}
+              style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
+              onClick={() => setFilterMode('upcoming')}
+            >
+              Предстоящие
+            </button>
+            <button
+              className={`theme-option ${filterMode === 'past' ? 'active' : ''}`}
+              style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
+              onClick={() => setFilterMode('past')}
+            >
+              Прошедшие
+            </button>
+          </div>
+        </>
       )}
 
-      {sorted.map((it) => {
+      {items.length === 0 && (
+        <div className="empty-state">Список пуст — добавьте первый заказ выше.</div>
+      )}
+      {items.length > 0 && filtered.length === 0 && (
+        <div className="empty-state">Ничего не найдено.</div>
+      )}
+
+      {filtered.map((it) => {
         const label = dateTimeLabel(it.date, it.time, it.endTime)
         const doneCount = orderOperations.filter((s) => it.checklist?.[s.id]).length
         const total = orderTotal(it)
@@ -461,6 +583,10 @@ export default function MyOrders() {
                   {it.date && (
                     <button className="btn btn-sm" onClick={() => downloadIcs(it)}>📅 В календарь</button>
                   )}
+                  {doneCount > 0 && (
+                    <button className="btn btn-sm" onClick={() => shareEstimate(it)}>📤 Смета</button>
+                  )}
+                  <button className="btn btn-sm" onClick={() => repeatOrder(it)}>🔁 Повторить</button>
                   {total > 0 && (
                     <span className="pill badge-accent">{total.toLocaleString('ru-RU')} ₽</span>
                   )}
