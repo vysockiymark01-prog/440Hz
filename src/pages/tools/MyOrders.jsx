@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import orderOperations from '../../data/orderOperations.js'
 import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
+import { clientKey } from '../../utils/clientKey.js'
 
 const PAYMENT_LABELS = { paid: 'Оплачено', partial: 'Частично', unpaid: 'Должен' }
 const PAYMENT_ORDER = ['unpaid', 'partial', 'paid']
@@ -23,12 +24,6 @@ function pad(n) {
 
 function formatIcsDate(d) {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`
-}
-
-function clientKey(order) {
-  if (order.phone && order.phone.trim()) return `phone:${order.phone.replace(/[^+\d]/g, '')}`
-  if (order.clientName && order.clientName.trim()) return `name:${order.clientName.trim().toLowerCase()}`
-  return null
 }
 
 function getOverdueClients(items) {
@@ -1098,6 +1093,11 @@ export default function MyOrders() {
                     <button className="btn btn-sm" onClick={() => shareEstimate(it)}>📤 Смета</button>
                   )}
                   <button className="btn btn-sm" onClick={() => repeatOrder(it)}>🔁 Повторить</button>
+                  {clientKey(it) && (
+                    <button className="btn btn-sm" onClick={() => navigate(`/tools/clients/${encodeURIComponent(clientKey(it))}`)}>
+                      👤 Профиль
+                    </button>
+                  )}
                   {it.serialNumber && (
                     <button className="btn btn-sm" onClick={() => setSearch(it.serialNumber)}>🔧 История инструмента</button>
                   )}
