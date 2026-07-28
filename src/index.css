@@ -439,3 +439,22 @@ table.wire-table th { color: var(--text-dim); font-weight: 600; font-size: 12px;
   flex: 1;
   padding-top: 3px;
 }
+
+@media print {
+  .no-print, .bottom-nav, .theme-quick-toggle {
+    display: none !important;
+  }
+  .app-main {
+    padding-bottom: 0 !important;
+  }
+  body, .app-main {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .card, .empty-state {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    color: #000 !important;
+    break-inside: avoid;
+  }
+}

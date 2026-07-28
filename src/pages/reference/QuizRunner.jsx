@@ -22,6 +22,7 @@ export default function QuizRunner() {
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const [results, setResults] = useLocalStorage('pt_quiz_results_v1', {})
+  const [wrongByLecture, setWrongByLecture] = useLocalStorage('pt_quiz_wrong_v1', {})
   const [quote, setQuote] = useState(null)
   const [courseJustCompleted, setCourseJustCompleted] = useState(false)
   const [wrongAnswers, setWrongAnswers] = useState([])
@@ -67,6 +68,7 @@ export default function QuizRunner() {
       if (!prevBest || finalScore > prevBest.score) {
         setResults((r) => ({ ...r, [lectureId]: { score: finalScore, total: questions.length } }))
       }
+      setWrongByLecture((w) => ({ ...w, [lectureId]: updatedWrong }))
       if (finalScore >= 1) {
         const alreadyPassed = !!testsPassed[lectureId]
         markTestPassed(lectureId)

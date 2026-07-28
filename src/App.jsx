@@ -11,6 +11,7 @@ import SearchScreen from './pages/reference/SearchScreen.jsx'
 import QuizHome from './pages/reference/QuizHome.jsx'
 import QuizRunner from './pages/reference/QuizRunner.jsx'
 import CareGuide from './pages/reference/CareGuide.jsx'
+import FinalReview from './pages/reference/FinalReview.jsx'
 
 import TrainerHome from './pages/trainer/TrainerHome.jsx'
 import ListenBeats from './pages/trainer/ListenBeats.jsx'
@@ -19,6 +20,7 @@ import SenseSecond from './pages/trainer/SenseSecond.jsx'
 import MergeUnison from './pages/trainer/MergeUnison.jsx'
 import TemperamentTrainer from './pages/trainer/TemperamentTrainer.jsx'
 import EarDiagnostics from './pages/trainer/EarDiagnostics.jsx'
+import DailyExam from './pages/trainer/DailyExam.jsx'
 
 import ToolsHome from './pages/tools/ToolsHome.jsx'
 import WireTable from './pages/tools/WireTable.jsx'
@@ -33,12 +35,14 @@ import TensionCalculator from './pages/tools/TensionCalculator.jsx'
 import ClientPhrases from './pages/tools/ClientPhrases.jsx'
 import MyOrders from './pages/tools/MyOrders.jsx'
 import OrderStats from './pages/tools/OrderStats.jsx'
+import Inventory from './pages/tools/Inventory.jsx'
 import CommonMistakes from './pages/tools/CommonMistakes.jsx'
 import SymptomQuiz from './pages/tools/SymptomQuiz.jsx'
 
 import MoreHome from './pages/more/MoreHome.jsx'
 import MyCourse from './pages/more/MyCourse.jsx'
 import BusinessCard from './pages/more/BusinessCard.jsx'
+import TaxCalculator from './pages/more/TaxCalculator.jsx'
 import Favorites from './pages/more/Favorites.jsx'
 import About from './pages/more/About.jsx'
 import Appearance from './pages/more/Appearance.jsx'
@@ -60,6 +64,7 @@ export default function App() {
           <Route path="/reference/quiz" element={<QuizHome />} />
           <Route path="/reference/quiz/:lectureId" element={<QuizRunner />} />
           <Route path="/reference/care" element={<CareGuide />} />
+          <Route path="/reference/review" element={<FinalReview />} />
           <Route path="/reference/:lectureId" element={<LectureView />} />
           <Route path="/reference/:lectureId/:articleId" element={<ArticleView />} />
 
@@ -70,6 +75,7 @@ export default function App() {
           <Route path="/trainer/unison" element={<MergeUnison />} />
           <Route path="/trainer/temperament" element={<TemperamentTrainer />} />
           <Route path="/trainer/ear-diagnostics" element={<EarDiagnostics />} />
+          <Route path="/trainer/daily-exam" element={<DailyExam />} />
 
           <Route path="/tools" element={<ToolsHome />} />
           <Route path="/tools/wire" element={<WireTable />} />
@@ -84,6 +90,7 @@ export default function App() {
           <Route path="/tools/phrases" element={<ClientPhrases />} />
           <Route path="/tools/my-orders" element={<MyOrders />} />
           <Route path="/tools/order-stats" element={<OrderStats />} />
+          <Route path="/tools/inventory" element={<Inventory />} />
           <Route path="/tools/common-mistakes" element={<CommonMistakes />} />
           <Route path="/tools/symptom-quiz" element={<SymptomQuiz />} />
           <Route path="/tools/my-instruments" element={<Navigate to="/tools/my-orders" replace />} />
@@ -91,6 +98,7 @@ export default function App() {
           <Route path="/more" element={<MoreHome />} />
           <Route path="/more/course" element={<MyCourse />} />
           <Route path="/more/business-card" element={<BusinessCard />} />
+          <Route path="/more/tax" element={<TaxCalculator />} />
           <Route path="/more/favorites" element={<Favorites />} />
           <Route path="/more/appearance" element={<Appearance />} />
           <Route path="/more/about" element={<About />} />

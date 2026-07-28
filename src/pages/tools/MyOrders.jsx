@@ -117,6 +117,16 @@ function shareReminder(order) {
   shareText('Напоминание о визите', parts.join('\n'))
 }
 
+function shareOnMyWay(order) {
+  const eta = window.prompt('Через сколько минут будете на месте?', '30')
+  if (eta === null) return
+  const parts = ['Выезжаю к вам']
+  if (eta.trim()) parts.push(`, буду примерно через ${eta.trim()} мин`)
+  parts.push('.')
+  if (order.address) parts.push(` Адрес: ${order.address}.`)
+  shareText('Выезжаю', parts.join(''))
+}
+
 function shareBulkReminder(overdueClients) {
   const lines = overdueClients.map((g) => `${g.label}${g.phone ? ` — ${g.phone}` : ''}`)
   const text = ['Пора напомнить о повторной настройке:', '', ...lines].join('\n')
@@ -335,6 +345,9 @@ export default function MyOrders() {
   const [blacklistOpen, setBlacklistOpen] = useState(false)
   const [templates, setTemplates] = useLocalStorage('pt_checklist_templates_v1', [])
   const [dayOrder, setDayOrder] = useLocalStorage('pt_day_order_v1', {})
+  const [inventory, setInventory] = useLocalStorage('pt_inventory_v1', [])
+  const [invPick, setInvPick] = useState('')
+  const [invQty, setInvQty] = useState('1')
   const [tagInput, setTagInput] = useState('')
   const [formTags, setFormTags] = useState([])
   const [serialNumber, setSerialNumber] = useState('')
@@ -567,6 +580,19 @@ export default function MyOrders() {
 
   const setActualEndTime = (orderId, value) => {
     setItems((prev) => prev.map((it) => (it.id === orderId ? { ...it, actualEndTime: value } : it)))
+  }
+
+  const consumeInventory = (orderId) => {
+    const item = inventory.find((i) => i.id === invPick)
+    const qty = Number(invQty)
+    if (!item || !qty || qty <= 0) return
+    const cost = qty * (item.unitCost || 0)
+    setInventory((prev) => prev.map((i) => (i.id === item.id ? { ...i, qty: Math.max(0, i.qty - qty) } : i)))
+    setItems((prev) =>
+      prev.map((it) => (it.id === orderId ? { ...it, expenses: orderExpenses(it) + cost } : it))
+    )
+    setInvPick('')
+    setInvQty('1')
   }
 
   const sorted = [...items].sort((a, b) => {
@@ -1063,6 +1089,11 @@ export default function MyOrders() {
                   {it.date && !label.past && (
                     <button className="btn btn-sm" onClick={() => shareReminder(it)}>✉️ Напомнить</button>
                   )}
+                  {it.date === todayStr && (
+                    <button className="btn btn-sm" onClick={() => shareOnMyWay(it)}>🚗 Выезжаю</button>
+                  )}
+                  <button className="btn btn-sm" onClick={() => navigate(`/tools/diagnostic?order=${it.id}`)}>🔍 Диагностика</button>
+                  <button className="btn btn-sm" onClick={() => navigate(`/tools/work-order?order=${it.id}`)}>📋 Порядок работ</button>
                   {doneCount > 0 && (
                     <button className="btn btn-sm" onClick={() => shareEstimate(it)}>📤 Смета</button>
                   )}
@@ -1118,6 +1149,31 @@ export default function MyOrders() {
                   <div className="row" style={{ marginTop: 4, fontSize: 13, color: 'var(--text-dim)' }}>
                     <span>Прибыль</span>
                     <span>{orderProfit(it).toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                )}
+                {inventory.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
+                      Списать со склада
+                    </label>
+                    <div className="row" style={{ gap: 8 }}>
+                      <select value={invPick} onChange={(e) => setInvPick(e.target.value)} style={{ flex: 1 }}>
+                        <option value="">Выберите материал…</option>
+                        {inventory.map((i) => (
+                          <option key={i.id} value={i.id}>{i.name} ({i.qty} {i.unit})</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={invQty}
+                        onChange={(e) => setInvQty(e.target.value)}
+                        style={{ width: 60, textAlign: 'center' }}
+                      />
+                      <button className="btn btn-sm" onClick={() => consumeInventory(it.id)} disabled={!invPick}>
+                        Списать
+                      </button>
+                    </div>
                   </div>
                 )}
                 {it.time && (

@@ -7,17 +7,31 @@ import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 const BASE = 440
 const TOLERANCE = 0.3
 
-function randomDiff() {
-  return Math.round((0.5 + Math.random() * 4.5) * 10) / 10
+// Адаптивная сложность: чем длиннее серия верных ответов подряд, тем чаще
+// попадаются трудноразличимые случаи (очень медленные и очень быстрые биения).
+function randomDiff(streak = 0) {
+  if (streak >= 6) {
+    return Math.round((0.5 + Math.random() * 4.5) * 10) / 10 // весь диапазон, включая края
+  }
+  if (streak >= 3) {
+    return Math.round((0.8 + Math.random() * 3.4) * 10) / 10 // средняя сложность
+  }
+  return Math.round((1.2 + Math.random() * 1.8) * 10) / 10 // комфортная середина
+}
+
+function difficultyLabel(streak) {
+  if (streak >= 6) return 'сложно'
+  if (streak >= 3) return 'средне'
+  return 'легко'
 }
 
 export default function CountBeats() {
   const navigate = useNavigate()
   const { start, stop, isPlaying } = useBeatEngine()
-  const [diff, setDiff] = useState(randomDiff)
+  const [stats, setStats] = useLocalStorage('pt_count_stats_v1', { attempts: 0, correct: 0, totalError: 0, streak: 0 })
+  const [diff, setDiff] = useState(() => randomDiff(stats.streak))
   const [answer, setAnswer] = useState('')
   const [result, setResult] = useState(null)
-  const [stats, setStats] = useLocalStorage('pt_count_stats_v1', { attempts: 0, correct: 0, totalError: 0 })
   const { recordActivity } = useTrainerStreak()
   const revealedRef = useRef(false)
 
@@ -30,7 +44,7 @@ export default function CountBeats() {
   const newRound = () => {
     stop()
     revealedRef.current = false
-    setDiff(randomDiff())
+    setDiff(randomDiff(stats.streak))
     setAnswer('')
     setResult(null)
   }
@@ -45,6 +59,7 @@ export default function CountBeats() {
       attempts: s.attempts + 1,
       correct: s.correct + (good ? 1 : 0),
       totalError: s.totalError + error,
+      streak: good ? (s.streak || 0) + 1 : 0,
     }))
     stop()
     recordActivity()
@@ -63,6 +78,9 @@ export default function CountBeats() {
         <div className="stat-box"><div className="v">{stats.attempts}</div><div className="l">попыток</div></div>
         <div className="stat-box"><div className="v">{accuracy}%</div><div className="l">точность</div></div>
         <div className="stat-box"><div className="v">{avgError}</div><div className="l">ср. ошибка, Гц</div></div>
+      </div>
+      <div style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>
+        сложность сейчас: {difficultyLabel(stats.streak || 0)} · серия верных: {stats.streak || 0}
       </div>
 
       {isPlaying ? (

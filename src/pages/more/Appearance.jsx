@@ -4,6 +4,7 @@ import { useFontScale, FONT_SCALES } from '../../contexts/FontScaleContext.jsx'
 
 const options = [
   { value: 'system', label: 'Системная', desc: 'Следует за темой устройства и меняется вместе с ней' },
+  { value: 'auto', label: 'Авто по времени суток', desc: 'Тёмная с 20:00 до 7:00, светлая днём' },
   { value: 'light', label: 'Светлая', desc: 'Всегда светлый интерфейс' },
   { value: 'dark', label: 'Тёмная', desc: 'Всегда тёмный интерфейс' },
 ]

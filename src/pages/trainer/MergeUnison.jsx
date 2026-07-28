@@ -2,10 +2,17 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
 import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
+import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import BeatVisualizer from '../../components/BeatVisualizer.jsx'
 
 const BASE = 440
-const SUCCESS_TOLERANCE = 0.15
+
+// Адаптивная сложность: допуск точности сужается по мере серии верных попыток.
+function toleranceFor(streak) {
+  if (streak >= 6) return 0.08
+  if (streak >= 3) return 0.11
+  return 0.15
+}
 
 function randomTarget() {
   const magnitude = 0.5 + Math.random() * 3.5
@@ -17,6 +24,8 @@ export default function MergeUnison() {
   const navigate = useNavigate()
   const { start, stop, setFreqB, getAnalyser, isPlaying } = useBeatEngine()
   const { recordActivity } = useTrainerStreak()
+  const [progress, setProgress] = useLocalStorage('pt_unison_progress_v1', { streak: 0 })
+  const successTolerance = toleranceFor(progress.streak || 0)
   const [hiddenTarget, setHiddenTarget] = useState(randomTarget)
   const [knob, setKnob] = useState(0)
   const [revealed, setRevealed] = useState(null)
@@ -57,9 +66,11 @@ export default function MergeUnison() {
 
   const check = useCallback(() => {
     const error = Math.abs(currentOffset)
-    setRevealed({ success: error <= SUCCESS_TOLERANCE, error, target: hiddenTarget })
+    const success = error <= successTolerance
+    setRevealed({ success, error, target: hiddenTarget })
+    setProgress((p) => ({ streak: success ? (p.streak || 0) + 1 : 0 }))
     recordActivity()
-  }, [currentOffset, hiddenTarget, recordActivity])
+  }, [currentOffset, hiddenTarget, recordActivity, successTolerance, setProgress])
 
   const newRound = () => {
     stop()
@@ -77,6 +88,9 @@ export default function MergeUnison() {
         Вторая струна случайно расстроена. Крутите «ключ» и по поведению биений сведите унисон в ноль —
         направление смещения не подсказывается.
       </p>
+      <div style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        точность сейчас: ±{successTolerance.toFixed(2)} Гц · серия верных: {progress.streak || 0}
+      </div>
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Эталон: с чем сравнивать на слух</h3>

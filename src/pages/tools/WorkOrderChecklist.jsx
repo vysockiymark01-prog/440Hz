@@ -1,10 +1,13 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { workOrderSteps } from '../../data/checklists.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 
 export default function WorkOrderChecklist() {
   const navigate = useNavigate()
-  const [checked, setChecked] = useLocalStorage('pt_workorder_checked_v1', {})
+  const [searchParams] = useSearchParams()
+  const orderId = searchParams.get('order')
+  const storageKey = orderId ? `pt_workorder_checked_v1_${orderId}` : 'pt_workorder_checked_v1'
+  const [checked, setChecked] = useLocalStorage(storageKey, {})
 
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }))
   const reset = () => setChecked({})
@@ -13,9 +16,16 @@ export default function WorkOrderChecklist() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
+      <button
+        className="back-link"
+        onClick={() => navigate(orderId ? '/tools/my-orders' : '/tools')}
+      >
+        {orderId ? '‹ К заказу' : '‹ Инструменты'}
+      </button>
       <h1 className="screen-title">Порядок работы на заказе</h1>
-      <p className="screen-subtitle">{done} из {workOrderSteps.length} шагов выполнено</p>
+      <p className="screen-subtitle">
+        {done} из {workOrderSteps.length} шагов выполнено{orderId ? ' · сохраняется для этого заказа' : ''}
+      </p>
 
       <div className="card">
         {workOrderSteps.map((s, i) => (

@@ -11,16 +11,23 @@ function getSystemTheme() {
 function readStoredPref() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (raw === 'light' || raw === 'dark' || raw === 'system') return raw
+    if (raw === 'light' || raw === 'dark' || raw === 'system' || raw === 'auto') return raw
   } catch {
     // ignore
   }
   return 'system'
 }
 
+// Тёмная тема с 20:00 до 7:00, светлая в остальное время.
+function getTimeOfDayTheme() {
+  const hour = new Date().getHours()
+  return hour >= 20 || hour < 7 ? 'dark' : 'light'
+}
+
 export function ThemeProvider({ children }) {
   const [pref, setPrefState] = useState(readStoredPref)
   const [systemTheme, setSystemTheme] = useState(getSystemTheme)
+  const [timeTheme, setTimeTheme] = useState(getTimeOfDayTheme)
 
   useEffect(() => {
     if (!window.matchMedia) return
@@ -30,7 +37,12 @@ export function ThemeProvider({ children }) {
     return () => mql.removeEventListener?.('change', onChange)
   }, [])
 
-  const effectiveTheme = pref === 'system' ? systemTheme : pref
+  useEffect(() => {
+    const id = setInterval(() => setTimeTheme(getTimeOfDayTheme()), 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  const effectiveTheme = pref === 'system' ? systemTheme : pref === 'auto' ? timeTheme : pref
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', effectiveTheme)

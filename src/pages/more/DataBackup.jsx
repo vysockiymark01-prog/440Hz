@@ -38,6 +38,7 @@ export default function DataBackup() {
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
+    window.localStorage.setItem('pt_last_backup_v1', JSON.stringify(new Date().toISOString()))
     setStatus({ type: 'good', text: 'Файл резервной копии скачан.' })
   }
 
