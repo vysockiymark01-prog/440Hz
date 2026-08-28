@@ -11,30 +11,47 @@ export default function ArticleView() {
   const lecture = lectures.find((l) => l.id === lectureId)
   const article = lecture?.articles.find((a) => a.id === articleId)
   const { isArticleFav, toggleArticle } = useFavorites()
-  const [speaking, setSpeaking] = useState(false)
+  // 'idle' — не запущено, 'speaking' — читает, 'paused' — на паузе (можно продолжить с того же места)
+  const [speechState, setSpeechState] = useState('idle')
   const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
 
   useEffect(() => () => {
     if (ttsSupported) window.speechSynthesis.cancel()
+    setSpeechState('idle')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lectureId, articleId])
 
-  const toggleSpeech = useCallback(() => {
+  const startSpeech = useCallback(() => {
     if (!ttsSupported || !article) return
-    if (speaking) {
-      window.speechSynthesis.cancel()
-      setSpeaking(false)
-      return
-    }
     const utterance = new SpeechSynthesisUtterance(`${article.title}. ${article.body}`)
     utterance.lang = 'ru-RU'
     utterance.rate = 0.95
-    utterance.onend = () => setSpeaking(false)
-    utterance.onerror = () => setSpeaking(false)
+    utterance.onend = () => setSpeechState('idle')
+    utterance.onerror = () => setSpeechState('idle')
     window.speechSynthesis.cancel()
     window.speechSynthesis.speak(utterance)
-    setSpeaking(true)
-  }, [ttsSupported, article, speaking])
+    setSpeechState('speaking')
+  }, [ttsSupported, article])
+
+  // Пауза/продолжение через speechSynthesis.pause()/resume() — движок сам
+  // запоминает место в тексте, начинать заново не нужно.
+  const toggleSpeech = useCallback(() => {
+    if (!ttsSupported || !article) return
+    if (speechState === 'speaking') {
+      window.speechSynthesis.pause()
+      setSpeechState('paused')
+    } else if (speechState === 'paused') {
+      window.speechSynthesis.resume()
+      setSpeechState('speaking')
+    } else {
+      startSpeech()
+    }
+  }, [ttsSupported, article, speechState, startSpeech])
+
+  const stopSpeech = useCallback(() => {
+    window.speechSynthesis.cancel()
+    setSpeechState('idle')
+  }, [])
 
   if (!lecture || !article) {
     return <div className="empty-state">Статья не найдена.</div>
@@ -59,9 +76,16 @@ export default function ArticleView() {
       </div>
       <p className="pill" style={{ marginBottom: 14 }}>Лекция {lecture.num} · {lecture.title}</p>
       {ttsSupported && (
-        <button className="btn btn-block" style={{ marginBottom: 14 }} onClick={toggleSpeech}>
-          {speaking ? '⏹️ Остановить озвучку' : '🔊 Прослушать статью'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <button className="btn btn-block" onClick={toggleSpeech}>
+            {speechState === 'speaking' && '⏸️ Пауза'}
+            {speechState === 'paused' && '▶️ Продолжить'}
+            {speechState === 'idle' && '🔊 Прослушать статью'}
+          </button>
+          {speechState !== 'idle' && (
+            <button className="btn" onClick={stopSpeech} aria-label="Остановить озвучку">⏹️</button>
+          )}
+        </div>
       )}
       <TermText text={article.body} />
       <ArticleImages articleId={article.id} />
