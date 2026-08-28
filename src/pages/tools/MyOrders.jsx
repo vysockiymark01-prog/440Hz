@@ -635,7 +635,7 @@ export default function MyOrders() {
           )}
         </span>
       </div>
-      <p className="screen-subtitle">
+      <p className="screen-subtitle" style={{ marginTop: 8 }}>
         Клиенты, даты и чек-лист операций с ценами по каждому заказу. Дату и время можно
         экспортировать в календарь телефона или планшета. Хранится только на этом устройстве.
       </p>
@@ -716,9 +716,14 @@ export default function MyOrders() {
           {debtors.map((d) => (
             <div key={d.id} className="row" style={{ padding: '6px 0', fontSize: 13 }}>
               <span>{d.clientName || d.brand || 'Без имени'}</span>
-              <span style={{ color: 'var(--danger)' }}>
+              <button
+                className="pill"
+                style={{ border: 'none', cursor: 'pointer', color: 'var(--danger)', background: 'none' }}
+                onClick={() => togglePaymentStatus(d.id)}
+                title="Нажмите, чтобы отметить оплату"
+              >
                 {d.total.toLocaleString('ru-RU')} ₽ · {PAYMENT_LABELS[d.paymentStatus] || PAYMENT_LABELS.unpaid}
-              </span>
+              </button>
             </div>
           ))}
         </div>
