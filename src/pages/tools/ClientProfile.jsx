@@ -11,7 +11,7 @@ export default function ClientProfile() {
   const { key } = useParams()
   const navigate = useNavigate()
   const [items] = useLocalStorage('pt_my_orders_v1', [])
-  const [blacklist] = useLocalStorage('pt_blacklist_v1', [])
+  const [blacklist, setBlacklist] = useLocalStorage('pt_blacklist_v1', [])
   const decodedKey = decodeURIComponent(key)
 
   const visits = useMemo(
@@ -44,6 +44,10 @@ export default function ClientProfile() {
   const blacklistEntry = blacklist.find((b) => b.key === decodedKey)
   const notes = visits.filter((it) => it.note && it.note.trim())
 
+  const removeFromBlacklist = () => {
+    setBlacklist((prev) => prev.filter((b) => b.key !== decodedKey))
+  }
+
   return (
     <div>
       <button className="back-link" onClick={() => navigate('/tools/clients')}>‹ Клиенты</button>
@@ -55,7 +59,10 @@ export default function ClientProfile() {
 
       {blacklistEntry && (
         <div className="result-flash bad" style={{ marginBottom: 14 }}>
-          🚫 В чёрном списке{blacklistEntry.reason ? `: ${blacklistEntry.reason}` : ''}
+          <div style={{ marginBottom: 8 }}>
+            🚫 В чёрном списке{blacklistEntry.reason ? `: ${blacklistEntry.reason}` : ''}
+          </div>
+          <button className="btn btn-sm" onClick={removeFromBlacklist}>Убрать из чёрного списка</button>
         </div>
       )}
 
