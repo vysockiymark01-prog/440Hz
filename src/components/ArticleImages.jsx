@@ -1,9 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import articleImages from '../data/articleImages.js'
+import ZoomableImage from './ZoomableImage.jsx'
 
 export default function ArticleImages({ articleId }) {
   const images = articleImages[articleId]
   const [lightbox, setLightbox] = useState(null)
+
+  // Пока открыто фото на весь экран, страница под ним не должна скроллиться —
+  // иначе жест по картинке листает текст статьи позади.
+  useEffect(() => {
+    if (!lightbox) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
+    }
+  }, [lightbox])
 
   if (!images || images.length === 0) return null
 
@@ -38,13 +50,22 @@ export default function ArticleImages({ articleId }) {
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 200, padding: 20,
+            touchAction: 'none', overscrollBehavior: 'contain',
           }}
         >
-          <img
-            src={`./images/${lightbox.src}`}
-            alt={lightbox.caption}
-            style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8 }}
-          />
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox(null) }}
+            aria-label="Закрыть"
+            style={{
+              position: 'absolute', top: 16, right: 16, zIndex: 201,
+              width: 40, height: 40, borderRadius: '50%', border: 'none',
+              background: 'rgba(255,255,255,0.15)', color: '#fff',
+              fontSize: 20, lineHeight: 1, cursor: 'pointer',
+            }}
+          >
+            ✕
+          </button>
+          <ZoomableImage src={`./images/${lightbox.src}`} alt={lightbox.caption} />
         </div>
       )}
     </div>
