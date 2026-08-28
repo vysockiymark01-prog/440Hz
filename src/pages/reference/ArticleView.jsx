@@ -1,9 +1,20 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import TermText from '../../components/TermText.jsx'
 import ArticleImages from '../../components/ArticleImages.jsx'
 import { useFavorites } from '../../hooks/useFavorites.js'
+
+// Делит текст на предложения — это единица, с которой можно надёжно
+// продолжить чтение. Родной SpeechSynthesis.pause()/resume() на многих
+// Android-устройствах не работает (звук останавливается и не возобновляется,
+// это известная особенность системного TTS-движка Android), поэтому вместо
+// него читаем по предложениям и сами запоминаем, на каком остановились.
+function splitIntoChunks(article) {
+  const body = (article.body || '').replace(/\s+/g, ' ').trim()
+  const sentences = body.split(/(?<=[.!?])\s+/).filter(Boolean)
+  return [`${article.title}.`, ...sentences]
+}
 
 export default function ArticleView() {
   const { lectureId, articleId } = useParams()
@@ -15,41 +26,75 @@ export default function ArticleView() {
   const [speechState, setSpeechState] = useState('idle')
   const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
 
+  const chunksRef = useRef([])
+  const indexRef = useRef(0)
+  // true, пока идёт непрерывное чтение — используется, чтобы отличить
+  // "предложение закончилось само" от "чтение прервали паузой/остановкой"
+  const runningRef = useRef(false)
+
+  const speakChunk = useCallback((idx) => {
+    const chunks = chunksRef.current
+    if (idx >= chunks.length) {
+      runningRef.current = false
+      setSpeechState('idle')
+      indexRef.current = 0
+      return
+    }
+    const utterance = new SpeechSynthesisUtterance(chunks[idx])
+    utterance.lang = 'ru-RU'
+    utterance.rate = 0.95
+    utterance.onend = () => {
+      if (!runningRef.current) return
+      indexRef.current = idx + 1
+      speakChunk(indexRef.current)
+    }
+    utterance.onerror = () => {
+      runningRef.current = false
+      setSpeechState('idle')
+    }
+    window.speechSynthesis.speak(utterance)
+  }, [])
+
   useEffect(() => () => {
+    runningRef.current = false
     if (ttsSupported) window.speechSynthesis.cancel()
     setSpeechState('idle')
+    indexRef.current = 0
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lectureId, articleId])
 
   const startSpeech = useCallback(() => {
     if (!ttsSupported || !article) return
-    const utterance = new SpeechSynthesisUtterance(`${article.title}. ${article.body}`)
-    utterance.lang = 'ru-RU'
-    utterance.rate = 0.95
-    utterance.onend = () => setSpeechState('idle')
-    utterance.onerror = () => setSpeechState('idle')
     window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
+    chunksRef.current = splitIntoChunks(article)
+    indexRef.current = 0
+    runningRef.current = true
     setSpeechState('speaking')
-  }, [ttsSupported, article])
+    speakChunk(0)
+  }, [ttsSupported, article, speakChunk])
 
-  // Пауза/продолжение через speechSynthesis.pause()/resume() — движок сам
-  // запоминает место в тексте, начинать заново не нужно.
   const toggleSpeech = useCallback(() => {
     if (!ttsSupported || !article) return
     if (speechState === 'speaking') {
-      window.speechSynthesis.pause()
+      // Останавливаем именно так, а не через pause() — на Android родная
+      // пауза часто не даёт потом продолжить. Текущее предложение при
+      // возобновлении прозвучит заново, дальше — с того же места.
+      runningRef.current = false
+      window.speechSynthesis.cancel()
       setSpeechState('paused')
     } else if (speechState === 'paused') {
-      window.speechSynthesis.resume()
+      runningRef.current = true
       setSpeechState('speaking')
+      speakChunk(indexRef.current)
     } else {
       startSpeech()
     }
-  }, [ttsSupported, article, speechState, startSpeech])
+  }, [ttsSupported, article, speechState, startSpeech, speakChunk])
 
   const stopSpeech = useCallback(() => {
+    runningRef.current = false
     window.speechSynthesis.cancel()
+    indexRef.current = 0
     setSpeechState('idle')
   }, [])
 
