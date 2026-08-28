@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
@@ -15,8 +15,9 @@ function buildVCard(card) {
 }
 
 function buildSummary(card) {
-  const parts = ['Визитка настройщика фортепиано']
+  const parts = ['🎹 Настройщик фортепиано']
   if (card.name) parts.push(card.name)
+  if (card.note) parts.push(card.note)
   if (card.phone) parts.push(`Тел.: ${card.phone}`)
   if (card.email) parts.push(`Email: ${card.email}`)
   if (card.city) parts.push(`Город: ${card.city}`)
@@ -34,6 +35,178 @@ function downloadVCard(card) {
   a.click()
   a.remove()
   URL.revokeObjectURL(url)
+}
+
+function downloadImage(blob, card) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${card.name || 'vizitka'}.png`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+// Перенос текста по словам под заданную ширину — canvas сам этого не умеет.
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ')
+  const lines = []
+  let line = ''
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line)
+      line = word
+    } else {
+      line = test
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
+// Рисует визитку как картинку 1080×1080 — квадрат подходит и для сторис,
+// и для постов, и для отправки в мессенджеры. Возвращает PNG-Blob.
+async function buildCardImage(card, qrDataUrl) {
+  const W = 1080
+  const H = 1080
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')
+
+  // Фон — тёмный градиент в стиле приложения.
+  const bg = ctx.createLinearGradient(0, 0, W, H)
+  bg.addColorStop(0, '#1c1c1e')
+  bg.addColorStop(1, '#121212')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, W, H)
+
+  // Декоративная золотая дуга сверху.
+  ctx.strokeStyle = '#d9a441'
+  ctx.lineWidth = 6
+  ctx.beginPath()
+  ctx.arc(W / 2, -220, 620, 0.78, Math.PI - 0.78)
+  ctx.stroke()
+
+  const padX = 96
+  let y = 200
+
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = '#d9a441'
+  ctx.font = '600 40px "Segoe UI", Roboto, sans-serif'
+  ctx.fillText('🎹 НАСТРОЙЩИК ФОРТЕПИАНО', padX, y)
+  y += 90
+
+  ctx.fillStyle = '#f0f0f0'
+  ctx.font = '800 76px "Segoe UI", Roboto, sans-serif'
+  const nameLines = wrapText(ctx, card.name || '', W - padX * 2)
+  for (const line of nameLines) {
+    ctx.fillText(line, padX, y)
+    y += 86
+  }
+  y += 16
+
+  if (card.note) {
+    ctx.fillStyle = '#a0a0a6'
+    ctx.font = '400 36px "Segoe UI", Roboto, sans-serif'
+    const noteLines = wrapText(ctx, card.note, W - padX * 2).slice(0, 3)
+    for (const line of noteLines) {
+      ctx.fillText(line, padX, y)
+      y += 48
+    }
+  }
+
+  // Контакты — прибиты к низу карточки.
+  let contactY = H - 300
+  ctx.font = '500 42px "Segoe UI", Roboto, sans-serif'
+  const contactLines = []
+  if (card.phone) contactLines.push(`📞  ${card.phone}`)
+  if (card.city) contactLines.push(`📍  ${card.city}`)
+  if (card.email) contactLines.push(`✉️  ${card.email}`)
+  ctx.fillStyle = '#f0f0f0'
+  for (const line of contactLines) {
+    ctx.fillText(line, padX, contactY)
+    contactY += 58
+  }
+
+  if (qrDataUrl) {
+    const qrSize = 220
+    const qrImg = await new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = qrDataUrl
+    })
+    const qx = W - padX - qrSize
+    const qy = H - padX - qrSize
+    ctx.fillStyle = '#ffffff'
+    const pad = 16
+    ctx.beginPath()
+    ctx.roundRect(qx - pad, qy - pad, qrSize + pad * 2, qrSize + pad * 2, 16)
+    ctx.fill()
+    ctx.drawImage(qrImg, qx, qy, qrSize, qrSize)
+  }
+
+  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+}
+
+// Общий помощник: пробует «Поделиться» с файлом, при неудаче/недоступности —
+// скачивает файл, чтобы кнопка никогда не оставалась «немой».
+async function shareOrDownloadFile(file, blob, card, download, setStatus, okMessage) {
+  if (navigator.canShare && navigator.share) {
+    try {
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Визитка' })
+        return
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+    }
+  }
+  download(blob, card)
+  setStatus({ type: 'good', text: okMessage })
+}
+
+async function shareCardImage(card, qrUrl, setStatus) {
+  setStatus(null)
+  try {
+    const blob = await buildCardImage(card, qrUrl)
+    if (!blob) throw new Error('no blob')
+    const file = new File([blob], `${card.name || 'vizitka'}.png`, { type: 'image/png' })
+    await shareOrDownloadFile(
+      file, blob, card, downloadImage, setStatus,
+      'Отправка через это приложение недоступна — картинка скачана, отправьте её вручную в соцсеть или мессенджер.'
+    )
+  } catch {
+    setStatus({ type: 'bad', text: 'Не удалось собрать картинку визитки. Попробуйте ещё раз или используйте QR-код ниже.' })
+  }
+}
+
+async function shareCardText(card, setStatus) {
+  setStatus(null)
+  const summary = buildSummary(card)
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Визитка', text: summary })
+      return
+    } catch (err) {
+      if (err?.name === 'AbortError') return
+    }
+  }
+
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(summary)
+      setStatus({ type: 'good', text: 'Отправка через это приложение недоступна — текст визитки скопирован в буфер обмена, вставьте его в пост или сообщение.' })
+      return
+    } catch {
+      /* переходим к сообщению об ошибке ниже */
+    }
+  }
+  setStatus({ type: 'bad', text: 'Отправка недоступна в этом браузере. Скопируйте текст визитки вручную.' })
 }
 
 // Пробует поделиться файлом .vcf, затем текстом, и только если оба способа
@@ -85,6 +258,8 @@ export default function BusinessCard() {
   const [draft, setDraft] = useState(card)
   const [status, setStatus] = useState(null)
   const [qrUrl, setQrUrl] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
+  const previewUrlRef = useRef(null)
 
   const save = () => setCard(draft)
   const field = (key, label, type = 'text', placeholder = '') => (
@@ -114,13 +289,34 @@ export default function BusinessCard() {
     return () => { cancelled = true }
   }, [card, hasData])
 
+  // Превью картинки визитки — пересобирается при изменении данных или QR-кода.
+  useEffect(() => {
+    if (!hasData) {
+      setImagePreview(null)
+      return
+    }
+    let cancelled = false
+    buildCardImage(card, qrUrl).then((blob) => {
+      if (cancelled || !blob) return
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+      const url = URL.createObjectURL(blob)
+      previewUrlRef.current = url
+      setImagePreview(url)
+    })
+    return () => { cancelled = true }
+  }, [card, qrUrl, hasData])
+
+  useEffect(() => () => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+  }, [])
+
   return (
     <div>
       <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
       <h1 className="screen-title">Визитка мастера</h1>
       <p className="screen-subtitle">
-        Заполните свои контакты один раз — потом можно отправить визитку клиенту или показать QR-код,
-        который камера телефона распознает как контакт.
+        Заполните свои контакты один раз — потом можно отправить визитку клиенту, выложить картинкой
+        в соцсети или показать QR-код, который камера телефона распознает как контакт.
       </p>
 
       <div className="card">
@@ -133,8 +329,18 @@ export default function BusinessCard() {
 
       {hasData && (
         <>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button className="btn btn-block btn-primary" onClick={() => shareVCard(card, setStatus)}>📤 Отправить клиенту</button>
+          {imagePreview && (
+            <div className="card" style={{ textAlign: 'center', marginTop: 12, padding: 8 }}>
+              <img src={imagePreview} alt="Превью визитки для соцсетей" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+            <button className="btn btn-block btn-primary" onClick={() => shareCardImage(card, qrUrl, setStatus)}>🖼️ Поделиться картинкой</button>
+            <button className="btn btn-block" onClick={() => shareCardText(card, setStatus)}>📝 Поделиться текстом</button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button className="btn" onClick={() => shareVCard(card, setStatus)}>📇 Контакт</button>
             <button className="btn" onClick={() => downloadVCard(card)}>⬇️ .vcf</button>
           </div>
 
@@ -149,7 +355,7 @@ export default function BusinessCard() {
               <div style={{ fontWeight: 700, marginBottom: 10 }}>QR-код визитки</div>
               <img src={qrUrl} alt="QR-код визитки" style={{ width: 200, height: 200, borderRadius: 8 }} />
               <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 10 }}>
-                Дайте клиенту навести камеру телефона — большинство камер сами предложат добавить контакт.
+                Дайте клиенту навести камеру телефона — большинство камера сами предложат добавить контакт.
                 Работает даже без интернета и без «Поделиться».
               </div>
             </div>
