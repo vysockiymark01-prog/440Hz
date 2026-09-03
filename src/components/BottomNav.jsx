@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useMemo } from 'react'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
 
 const SECTIONS = ['reference', 'trainer', 'tools', 'more']
 const STORAGE_PREFIX = 'pt_last_path_'
@@ -12,15 +13,17 @@ function getStoredPath(section) {
   }
 }
 
-const items = [
-  { key: 'reference', icon: '📖', label: 'Справочник' },
-  { key: 'trainer', icon: '🎧', label: 'Тренажёр' },
-  { key: 'tools', icon: '🛠️', label: 'Инструменты' },
-  { key: 'more', icon: '⭐', label: 'Ещё' },
+const ITEM_KEYS = [
+  { key: 'reference', icon: '📖', labelKey: 'nav_reference' },
+  { key: 'trainer', icon: '🎧', labelKey: 'nav_trainer' },
+  { key: 'tools', icon: '🛠️', labelKey: 'nav_tools' },
+  { key: 'more', icon: '⭐', labelKey: 'nav_more' },
 ]
 
 export default function BottomNav() {
   const location = useLocation()
+  const { t } = useLanguage()
+  const items = ITEM_KEYS.map((it) => ({ ...it, label: t(it.labelKey) }))
 
   // Запоминаем последний открытый экран каждого раздела, чтобы при
   // переключении вкладок не терять место, где пользователь читал.

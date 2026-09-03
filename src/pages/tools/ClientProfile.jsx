@@ -3,7 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { clientKey } from '../../utils/clientKey.js'
 import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
+import { getRemainingChecklist } from '../../utils/remainingWork.js'
 import orderOperations from '../../data/orderOperations.js'
+
+const CONTINUE_DRAFT_KEY = 'pt_continue_draft_v1'
 
 const PAYMENT_LABELS = { paid: 'Оплачено', partial: 'Частично', unpaid: 'Должен' }
 
@@ -43,9 +46,35 @@ export default function ClientProfile() {
   const serialNumbers = [...new Set(visits.map((it) => it.serialNumber).filter(Boolean))]
   const blacklistEntry = blacklist.find((b) => b.key === decodedKey)
   const notes = visits.filter((it) => it.note && it.note.trim())
+  // visits отсортированы по дате по убыванию — первый незаконченный и есть актуальный.
+  const unfinishedVisit = visits.find((it) => it.unfinished)
+  const stoppedOpTitle = unfinishedVisit
+    ? orderOperations.find((op) => op.id === unfinishedVisit.stoppedOpId)?.title
+    : null
 
   const removeFromBlacklist = () => {
     setBlacklist((prev) => prev.filter((b) => b.key !== decodedKey))
+  }
+
+  const continueVisit = () => {
+    if (!unfinishedVisit) return
+    const { checklist, prices } = getRemainingChecklist(unfinishedVisit)
+    const draft = {
+      brand: unfinishedVisit.brand || '',
+      clientName: unfinishedVisit.clientName || '',
+      clientType: unfinishedVisit.clientType || 'person',
+      phone: unfinishedVisit.phone || '',
+      address: unfinishedVisit.address || '',
+      serialNumber: unfinishedVisit.serialNumber || '',
+      checklist,
+      prices,
+    }
+    try {
+      window.localStorage.setItem(CONTINUE_DRAFT_KEY, JSON.stringify(draft))
+    } catch {
+      /* ignore */
+    }
+    navigate('/tools/my-orders')
   }
 
   return (
@@ -81,6 +110,17 @@ export default function ClientProfile() {
         <div className="card row" style={{ marginBottom: 14, alignItems: 'center' }}>
           <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>Прибыль по клиенту</span>
           <span style={{ fontWeight: 700 }}>{totalProfit.toLocaleString('ru-RU')} ₽</span>
+        </div>
+      )}
+
+      {unfinishedVisit && (
+        <div className="card" style={{ borderColor: 'var(--danger)', marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 6 }}>⏸ Есть незаконченная работа</div>
+          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
+            Остановился на: {stoppedOpTitle || '—'}
+            {unfinishedVisit.stoppedNote ? ` — ${unfinishedVisit.stoppedNote}` : ''}
+          </div>
+          <button className="btn btn-block btn-primary" onClick={continueVisit}>▶️ Продолжить у этого клиента</button>
         </div>
       )}
 
@@ -134,6 +174,9 @@ export default function ClientProfile() {
               <div style={{ fontWeight: 700 }}>
                 {it.date ? new Date(it.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'без даты'}
               </div>
+              {it.unfinished && (
+                <span className="pill" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>⏸ Не закончено</span>
+              )}
               {it.isWarranty ? (
                 <span className="pill">Гарантия</span>
               ) : total > 0 ? (
@@ -141,6 +184,12 @@ export default function ClientProfile() {
               ) : null}
             </div>
             {opsText && <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>{opsText}</div>}
+            {it.unfinished && (
+              <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
+                Остановился на: {orderOperations.find((op) => op.id === it.stoppedOpId)?.title || '—'}
+                {it.stoppedNote ? ` — ${it.stoppedNote}` : ''}
+              </div>
+            )}
             {it.note && <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 4 }}>{it.note}</div>}
           </div>
         )

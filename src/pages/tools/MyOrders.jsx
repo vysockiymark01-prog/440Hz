@@ -1,9 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import orderOperations from '../../data/orderOperations.js'
 import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
 import { clientKey } from '../../utils/clientKey.js'
+import { getRemainingChecklist } from '../../utils/remainingWork.js'
+
+const CONTINUE_DRAFT_KEY = 'pt_continue_draft_v1'
 
 const PAYMENT_LABELS = { paid: 'Оплачено', partial: 'Частично', unpaid: 'Должен' }
 const PAYMENT_ORDER = ['unpaid', 'partial', 'paid']
@@ -350,6 +353,34 @@ export default function MyOrders() {
   const speechRef = useRef(null)
   const [listening, setListening] = useState(false)
 
+  // Если из профиля клиента нажали «Продолжить у этого клиента» — подхватываем
+  // заготовку заказа (данные клиента + оставшиеся работы) и открываем форму.
+  useEffect(() => {
+    let draft
+    try {
+      const raw = window.localStorage.getItem(CONTINUE_DRAFT_KEY)
+      if (raw) draft = JSON.parse(raw)
+    } catch {
+      draft = null
+    }
+    if (!draft) return
+    try {
+      window.localStorage.removeItem(CONTINUE_DRAFT_KEY)
+    } catch {
+      /* ignore */
+    }
+    setBrand(draft.brand || '')
+    setClientName(draft.clientName || '')
+    setClientType(draft.clientType || 'person')
+    setPhone(draft.phone || '')
+    setAddress(draft.address || '')
+    setSerialNumber(draft.serialNumber || '')
+    setFormChecklist(draft.checklist || {})
+    setFormPrices(draft.prices || {})
+    setTimeout(() => formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const saveTemplate = () => {
     const hasAny = Object.values(formChecklist).some(Boolean)
     if (!hasAny) {
@@ -530,6 +561,7 @@ export default function MyOrders() {
     setClientType(it.clientType || 'person')
     setPhone(it.phone || '')
     setAddress(it.address || '')
+    setSerialNumber(it.serialNumber || '')
     setDate('')
     setTime('')
     setEndTime('')
@@ -537,9 +569,32 @@ export default function MyOrders() {
     setPackingList('')
     setExpenses('')
     setIsWarranty(false)
-    setFormChecklist({})
-    setFormPrices({})
+    if (it.unfinished) {
+      // Незакрытый заказ — переносим в новый только то, что осталось доделать.
+      const { checklist, prices } = getRemainingChecklist(it)
+      setFormChecklist(checklist)
+      setFormPrices(prices)
+    } else {
+      setFormChecklist({})
+      setFormPrices({})
+    }
     formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const toggleUnfinished = (orderId) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === orderId ? { ...it, unfinished: !it.unfinished } : it))
+    )
+  }
+
+  const setStoppedOp = (orderId, opId) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === orderId ? { ...it, stoppedOpId: opId || null } : it))
+    )
+  }
+
+  const setStoppedNote = (orderId, value) => {
+    setItems((prev) => prev.map((it) => (it.id === orderId ? { ...it, stoppedNote: value } : it)))
   }
 
   const toggleChecklistItem = (orderId, opId) => {
@@ -1109,6 +1164,11 @@ export default function MyOrders() {
                   {!findBlacklistEntry(clientKey(it)) && (
                     <button className="btn btn-sm" onClick={() => addToBlacklist(it)}>🚫 В ЧС</button>
                   )}
+                  {it.unfinished && (
+                    <span className="pill" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                      ⏸ Не закончено
+                    </span>
+                  )}
                   {it.isWarranty ? (
                     <span className="pill">Гарантия</span>
                   ) : (
@@ -1139,6 +1199,39 @@ export default function MyOrders() {
                   <span>Итого</span>
                   <span>{total.toLocaleString('ru-RU')} ₽</span>
                 </div>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!it.unfinished}
+                    onChange={() => toggleUnfinished(it.id)}
+                    style={{ width: 18, height: 18, accentColor: 'var(--accent)', flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 13 }}>Работа не закончена — нужно доделать в следующий визит</span>
+                </label>
+                {it.unfinished && (
+                  <div style={{ marginTop: 8 }}>
+                    <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
+                      Остановился на
+                    </label>
+                    <select
+                      value={it.stoppedOpId || ''}
+                      onChange={(e) => setStoppedOp(it.id, e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    >
+                      <option value="">Не выбрано</option>
+                      {orderOperations.map((op) => (
+                        <option key={op.id} value={op.id}>{op.title}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Детали, например: доклеил 3 узла, осталось подтянуть верхний регистр"
+                      value={it.stoppedNote || ''}
+                      onChange={(e) => setStoppedNote(it.id, e.target.value)}
+                    />
+                  </div>
+                )}
                 <div className="row" style={{ marginTop: 8, alignItems: 'center' }}>
                   <label style={{ fontSize: 13, color: 'var(--text-dim)' }}>Расходы на материалы, ₽</label>
                   <input

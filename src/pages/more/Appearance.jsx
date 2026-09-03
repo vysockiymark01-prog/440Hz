@@ -1,24 +1,32 @@
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
 import { useFontScale, FONT_SCALES } from '../../contexts/FontScaleContext.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-const options = [
-  { value: 'system', label: 'Системная', desc: 'Следует за темой устройства и меняется вместе с ней' },
-  { value: 'auto', label: 'Авто по времени суток', desc: 'Тёмная с 20:00 до 7:00, светлая днём' },
-  { value: 'light', label: 'Светлая', desc: 'Всегда светлый интерфейс' },
-  { value: 'dark', label: 'Тёмная', desc: 'Всегда тёмный интерфейс' },
+const THEME_OPTION_KEYS = [
+  { value: 'system', labelKey: 'appearance_theme_system', descKey: 'appearance_theme_system_desc' },
+  { value: 'auto', labelKey: 'appearance_theme_auto', descKey: 'appearance_theme_auto_desc' },
+  { value: 'light', labelKey: 'appearance_theme_light', descKey: 'appearance_theme_light_desc' },
+  { value: 'dark', labelKey: 'appearance_theme_dark', descKey: 'appearance_theme_dark_desc' },
+]
+
+const LANG_OPTIONS = [
+  { value: 'ru', labelKey: 'appearance_language_ru' },
+  { value: 'mn', labelKey: 'appearance_language_mn' },
 ]
 
 export default function Appearance() {
   const navigate = useNavigate()
   const { pref, setPref } = useTheme()
   const { scale, setScale } = useFontScale()
+  const { lang, setLang, t } = useLanguage()
+  const options = THEME_OPTION_KEYS.map((opt) => ({ ...opt, label: t(opt.labelKey), desc: t(opt.descKey) }))
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
-      <h1 className="screen-title">Оформление</h1>
-      <p className="screen-subtitle">По умолчанию приложение подстраивается под тему вашего устройства</p>
+      <button className="back-link" onClick={() => navigate('/more')}>‹ {t('more_title')}</button>
+      <h1 className="screen-title">{t('appearance_title')}</h1>
+      <p className="screen-subtitle">{t('appearance_subtitle')}</p>
 
       <div className="theme-options">
         {options.map((opt) => (
@@ -36,7 +44,7 @@ export default function Appearance() {
         ))}
       </div>
 
-      <div className="section-label">Размер текста</div>
+      <div className="section-label">{t('appearance_font_size')}</div>
       <div className="theme-options">
         {FONT_SCALES.map((opt) => (
           <button
@@ -45,6 +53,20 @@ export default function Appearance() {
             onClick={() => setScale(opt.value)}
           >
             <span style={{ fontWeight: 700 }}>{opt.label}</span>
+            <span className="check">✓</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="section-label">{t('appearance_language')}</div>
+      <div className="theme-options">
+        {LANG_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            className={`theme-option ${lang === opt.value ? 'active' : ''}`}
+            onClick={() => setLang(opt.value)}
+          >
+            <span style={{ fontWeight: 700 }}>{t(opt.labelKey)}</span>
             <span className="check">✓</span>
           </button>
         ))}

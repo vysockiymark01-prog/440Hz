@@ -1,0 +1,47 @@
+import { createContext, useContext, useState, useCallback } from 'react'
+import translations from '../data/i18n.js'
+
+const STORAGE_KEY = 'pt_lang_v1'
+const LanguageContext = createContext(null)
+
+function readStoredLang() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (raw === 'ru' || raw === 'mn') return raw
+  } catch {
+    // ignore
+  }
+  return 'ru'
+}
+
+export function LanguageProvider({ children }) {
+  const [lang, setLangState] = useState(readStoredLang)
+
+  const setLang = useCallback((next) => {
+    setLangState(next)
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next)
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  // t('key') — если перевода нет (или он ещё не сделан для этого раздела),
+  // молча показываем русский текст, чтобы ничего не «ломалось» на непереведённых экранах.
+  const t = useCallback(
+    (key) => translations[lang]?.[key] ?? translations.ru[key] ?? key,
+    [lang]
+  )
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
+      {children}
+    </LanguageContext.Provider>
+  )
+}
+
+export function useLanguage() {
+  const ctx = useContext(LanguageContext)
+  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider')
+  return ctx
+}

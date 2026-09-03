@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import glossary from '../../data/glossary.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 function formatUnlockDate(iso) {
   if (!iso) return ''
@@ -35,12 +36,13 @@ function dayOfYear() {
 export default function ReferenceHome() {
   const { status, isLectureUnlocked, unlockDateFor, lockReason, testsPassed, passedCount, totalLectures } = useCourseProgress()
   const isNovice = status === 'novice'
+  const { t } = useLanguage()
 
   const termOfDay = glossary.length > 0 ? glossary[dayOfYear() % glossary.length] : null
 
   return (
     <div>
-      <h1 className="screen-title">Справочник</h1>
+      <h1 className="screen-title">{t('reference_title')}</h1>
       <p className="screen-subtitle">Конспект курса по настройке фортепиано, разбитый на короткие карточки</p>
 
       {isNovice && (
@@ -60,27 +62,27 @@ export default function ReferenceHome() {
       )}
 
       <Link to="/reference/search" className="card-tap row">
-        <span className="row-start">🔍 <span>Поиск по справочнику</span></span>
+        <span className="row-start">🔍 <span>{t('reference_item_search')}</span></span>
         <span>›</span>
       </Link>
       <Link to="/reference/glossary" className="card-tap row">
-        <span className="row-start">🔤 <span>Глоссарий терминов</span></span>
+        <span className="row-start">🔤 <span>{t('reference_item_glossary')}</span></span>
         <span>›</span>
       </Link>
       <Link to="/reference/quiz" className="card-tap row">
-        <span className="row-start">📝 <span>Тесты по темам</span></span>
+        <span className="row-start">📝 <span>{t('reference_item_quiz')}</span></span>
         <span>›</span>
       </Link>
       <Link to="/reference/review" className="card-tap row">
-        <span className="row-start">📚 <span>Итоговое повторение</span></span>
+        <span className="row-start">📚 <span>{t('reference_item_review')}</span></span>
         <span>›</span>
       </Link>
       <Link to="/reference/care" className="card-tap row">
-        <span className="row-start">🧴 <span>Уход за инструментом</span></span>
+        <span className="row-start">🧴 <span>{t('reference_item_care')}</span></span>
         <span>›</span>
       </Link>
 
-      <div className="section-label">Лекции</div>
+      <div className="section-label">{t('reference_lectures')}</div>
       <div className="lecture-stepper">
         {lectures.map((l) => {
           const unlocked = isLectureUnlocked(l.id)
