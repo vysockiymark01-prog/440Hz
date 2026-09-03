@@ -5,37 +5,37 @@ const GROUP_KEYS = [
   {
     labelKey: 'tools_group_clients',
     items: [
-      { to: '/tools/my-orders', icon: '🗒️', titleKey: 'tools_item_my_orders', desc: 'Клиенты, дата и время визита, чек-лист операций с ценами, экспорт в календарь' },
-      { to: '/tools/clients', icon: '👤', titleKey: 'tools_item_clients', desc: 'История визитов, оплат и заметок по каждому клиенту' },
-      { to: '/tools/order-stats', icon: '📊', titleKey: 'tools_item_order_stats', desc: 'Заработок по неделе, месяцу или своему периоду, слепые зоны по операциям' },
-      { to: '/tools/phrases', icon: '💬', titleKey: 'tools_item_phrases', desc: 'Готовые объяснения с копированием в буфер' },
+      { to: '/tools/my-orders', icon: '🗒️', titleKey: 'tools_item_my_orders', descKey: 'tools_desc_my_orders' },
+      { to: '/tools/clients', icon: '👤', titleKey: 'tools_item_clients', descKey: 'tools_desc_clients' },
+      { to: '/tools/order-stats', icon: '📊', titleKey: 'tools_item_order_stats', descKey: 'tools_desc_order_stats' },
+      { to: '/tools/phrases', icon: '💬', titleKey: 'tools_item_phrases', descKey: 'tools_desc_phrases' },
     ],
   },
   {
     labelKey: 'tools_group_field',
     items: [
-      { to: '/tools/field-visit', icon: '🧳', titleKey: 'tools_item_field_visit', desc: 'Свод чек-листов + быстрые ссылки, можно поделиться' },
-      { to: '/tools/diagnostic', icon: '🔍', titleKey: 'tools_item_diagnostic', desc: '5 этапов + когда не покупают и не настраивают' },
-      { to: '/tools/work-order', icon: '✅', titleKey: 'tools_item_work_order', desc: '7 шагов канонического порядка' },
-      { to: '/tools/tuning-fork', icon: '🎵', titleKey: 'tools_item_tuning_fork', desc: 'Эталонный тон 438–443 Гц для сверки на слух' },
-      { to: '/tools/pitch-detector', icon: '🎙️', titleKey: 'tools_item_pitch_detector', desc: 'Слушает микрофон и показывает ближайшую ноту и отклонение в центах' },
-      { to: '/tools/symptom-quiz', icon: '🩺', titleKey: 'tools_item_symptom_quiz', desc: 'Квиз: по описанию симптома угадать тип шума' },
-      { to: '/tools/common-mistakes', icon: '⚠️', titleKey: 'tools_item_common_mistakes', desc: '12 предупреждений из конспекта в одном месте' },
+      { to: '/tools/field-visit', icon: '🧳', titleKey: 'tools_item_field_visit', descKey: 'tools_desc_field_visit' },
+      { to: '/tools/diagnostic', icon: '🔍', titleKey: 'tools_item_diagnostic', descKey: 'tools_desc_diagnostic' },
+      { to: '/tools/work-order', icon: '✅', titleKey: 'tools_item_work_order', descKey: 'tools_desc_work_order' },
+      { to: '/tools/tuning-fork', icon: '🎵', titleKey: 'tools_item_tuning_fork', descKey: 'tools_desc_tuning_fork' },
+      { to: '/tools/pitch-detector', icon: '🎙️', titleKey: 'tools_item_pitch_detector', descKey: 'tools_desc_pitch_detector' },
+      { to: '/tools/symptom-quiz', icon: '🩺', titleKey: 'tools_item_symptom_quiz', descKey: 'tools_desc_symptom_quiz' },
+      { to: '/tools/common-mistakes', icon: '⚠️', titleKey: 'tools_item_common_mistakes', descKey: 'tools_desc_common_mistakes' },
     ],
   },
   {
     labelKey: 'tools_group_calc',
     items: [
-      { to: '/tools/tension', icon: '⚖️', titleKey: 'tools_item_tension', desc: 'Диаметр, мензура, частота → натяжение в Н и кгс' },
-      { to: '/tools/order-form', icon: '📝', titleKey: 'tools_item_order_form', desc: '8 параметров → готовый текст заказа мастеру' },
-      { to: '/tools/wire', icon: '📏', titleKey: 'tools_item_wire', desc: 'Номер проволоки ↔ диаметр в мм, с поиском' },
-      { to: '/tools/inventory', icon: '📦', titleKey: 'tools_item_inventory', desc: 'Остатки струн, войлока и клея с закупочной ценой, списание в заказах' },
+      { to: '/tools/tension', icon: '⚖️', titleKey: 'tools_item_tension', descKey: 'tools_desc_tension' },
+      { to: '/tools/order-form', icon: '📝', titleKey: 'tools_item_order_form', descKey: 'tools_desc_order_form' },
+      { to: '/tools/wire', icon: '📏', titleKey: 'tools_item_wire', descKey: 'tools_desc_wire' },
+      { to: '/tools/inventory', icon: '📦', titleKey: 'tools_item_inventory', descKey: 'tools_desc_inventory' },
     ],
   },
   {
     labelKey: 'tools_group_shop',
     items: [
-      { to: '/tools/shop', icon: '🛒', titleKey: 'tools_item_shop', desc: 'Ссылки на маркетплейсы: ключи, смазка, полироль' },
+      { to: '/tools/shop', icon: '🛒', titleKey: 'tools_item_shop', descKey: 'tools_desc_shop' },
     ],
   },
 ]
@@ -45,7 +45,7 @@ export default function ToolsHome() {
   const groups = GROUP_KEYS.map((g) => ({
     labelKey: g.labelKey,
     label: t(g.labelKey),
-    items: g.items.map((it) => ({ ...it, title: t(it.titleKey) })),
+    items: g.items.map((it) => ({ ...it, title: t(it.titleKey), desc: t(it.descKey) })),
   }))
 
   return (

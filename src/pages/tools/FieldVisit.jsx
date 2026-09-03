@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { diagnosticStages, workOrderSteps } from '../../data/checklists.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-function buildShareText(diagDone, diagTotal, workDone, workTotal) {
+function buildShareText(t, diagDone, diagTotal, workDone, workTotal) {
   const lines = [
     'Чек-лист на выезд — «Настройщик фортепиано»',
-    `Диагностика: ${diagDone}/${diagTotal} этапов отмечено`,
-    `Порядок работы: ${workDone}/${workTotal} шагов отмечено`,
+    `${t('fv_diag_label')}: ${diagDone}/${diagTotal}`,
+    `${t('fv_work_label')}: ${workDone}/${workTotal}`,
   ]
   return lines.join('\n')
 }
@@ -18,6 +19,7 @@ export default function FieldVisit() {
   const [diagChecked, setDiagChecked] = useLocalStorage('pt_diagnostic_checked_v1', {})
   const [workChecked, setWorkChecked] = useLocalStorage('pt_workorder_checked_v1', {})
   const [shareStatus, setShareStatus] = useState(null)
+  const { t } = useLanguage()
 
   const toggleDiag = (id) => setDiagChecked((c) => ({ ...c, [id]: !c[id] }))
   const toggleWork = (id) => setWorkChecked((c) => ({ ...c, [id]: !c[id] }))
@@ -26,10 +28,10 @@ export default function FieldVisit() {
   const workDone = workOrderSteps.filter((s) => workChecked[s.id]).length
 
   const share = async () => {
-    const text = buildShareText(diagDone, diagnosticStages.length, workDone, workOrderSteps.length)
+    const text = buildShareText(t, diagDone, diagnosticStages.length, workDone, workOrderSteps.length)
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Чек-лист на выезд', text })
+        await navigator.share({ title: t('fv_title'), text })
         return
       } catch {
         // пользователь отменил или Web Share недоступен — пробуем буфер обмена
@@ -37,19 +39,19 @@ export default function FieldVisit() {
     }
     try {
       await navigator.clipboard.writeText(text)
-      setShareStatus('Скопировано в буфер обмена')
+      setShareStatus(t('fv_share_copied'))
     } catch {
-      setShareStatus('Не удалось поделиться — скопируйте вручную')
+      setShareStatus(t('fv_share_failed'))
     }
   }
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">На выезд</h1>
-      <p className="screen-subtitle">Свод перед визитом к клиенту: диагностика, порядок работы и быстрые инструменты</p>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('fv_title')}</h1>
+      <p className="screen-subtitle">{t('fv_subtitle')}</p>
 
-      <div className="section-label">Диагностика ({diagDone}/{diagnosticStages.length})</div>
+      <div className="section-label">{t('fv_diag_label')} ({diagDone}/{diagnosticStages.length})</div>
       <div className="card">
         {diagnosticStages.map((s) => (
           <label key={s.id} className={`checklist-item ${diagChecked[s.id] ? 'done' : ''}`}>
@@ -59,11 +61,11 @@ export default function FieldVisit() {
         ))}
       </div>
       <Link to="/tools/diagnostic" className="card-tap row" style={{ marginBottom: 20 }}>
-        <span>Полное описание этапов диагностики</span>
+        <span>{t('fv_diag_full')}</span>
         <span>›</span>
       </Link>
 
-      <div className="section-label">Порядок работы ({workDone}/{workOrderSteps.length})</div>
+      <div className="section-label">{t('fv_work_label')} ({workDone}/{workOrderSteps.length})</div>
       <div className="card">
         {workOrderSteps.map((s, i) => (
           <label key={s.id} className={`checklist-item ${workChecked[s.id] ? 'done' : ''}`}>
@@ -73,21 +75,21 @@ export default function FieldVisit() {
         ))}
       </div>
       <Link to="/tools/work-order" className="card-tap row" style={{ marginBottom: 20 }}>
-        <span>Полное описание порядка работы</span>
+        <span>{t('fv_work_full')}</span>
         <span>›</span>
       </Link>
 
-      <div className="section-label">Быстрый доступ</div>
+      <div className="section-label">{t('fv_quick_access')}</div>
       <Link to="/tools/wire" className="card-tap row">
-        <span className="row-start">📏 <span>Таблица проволоки Röslau</span></span>
+        <span className="row-start">📏 <span>{t('fv_wire_table')}</span></span>
         <span>›</span>
       </Link>
       <Link to="/tools/tuning-fork" className="card-tap row" style={{ marginBottom: 20 }}>
-        <span className="row-start">🎵 <span>Камертон</span></span>
+        <span className="row-start">🎵 <span>{t('fv_tuning_fork')}</span></span>
         <span>›</span>
       </Link>
 
-      <button className="btn btn-block btn-primary" onClick={share}>📤 Поделиться списком</button>
+      <button className="btn btn-block btn-primary" onClick={share}>{t('fv_share')}</button>
       {shareStatus && (
         <div className="result-flash good" style={{ marginTop: 12 }}>{shareStatus}</div>
       )}

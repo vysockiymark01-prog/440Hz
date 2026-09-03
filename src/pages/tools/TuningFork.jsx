@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const MIN_PITCH = 438
 const MAX_PITCH = 443
@@ -28,19 +29,18 @@ export default function TuningFork() {
   }
 
   const reset = () => setPitch(DEFAULT_PITCH)
+  const { t } = useLanguage()
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Камертон</h1>
-      <p className="screen-subtitle">
-        Ровный эталонный тон для сверки на слух. По умолчанию 440 Гц — можно сдвинуть под строй заказчика.
-      </p>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('tf_title')}</h1>
+      <p className="screen-subtitle">{t('tf_subtitle')}</p>
 
       <div className="card" style={{ textAlign: 'center' }}>
         <div className="big-number">{pitch.toFixed(0)} Гц</div>
         <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-          {pitch === DEFAULT_PITCH ? 'Стандартный камертонный строй' : `Отклонение от 440: ${pitch > DEFAULT_PITCH ? '+' : ''}${pitch - DEFAULT_PITCH} Гц`}
+          {pitch === DEFAULT_PITCH ? t('tf_standard') : `${t('tf_deviation')}: ${pitch > DEFAULT_PITCH ? '+' : ''}${pitch - DEFAULT_PITCH} Гц`}
         </div>
       </div>
 
@@ -59,12 +59,12 @@ export default function TuningFork() {
       </div>
 
       <button className="btn btn-block btn-primary" onClick={toggle}>
-        {isPlaying ? '⏸ Остановить' : '▶ Играть тон'}
+        {isPlaying ? t('tf_stop') : t('tf_play')}
       </button>
 
       {pitch !== DEFAULT_PITCH && (
         <button className="btn btn-block" style={{ marginTop: 10 }} onClick={reset}>
-          Вернуть 440 Гц
+          {t('tf_reset')}
         </button>
       )}
     </div>

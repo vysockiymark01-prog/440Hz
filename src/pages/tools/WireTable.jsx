@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import wireTable from '../../data/wireTable.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function WireTable() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const { t } = useLanguage()
 
   const filtered = useMemo(() => {
     if (!query.trim()) return wireTable
@@ -14,12 +16,12 @@ export default function WireTable() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Проволока Röslau</h1>
-      <p className="screen-subtitle">Сравнительная таблица номеров и диаметров стальной проволоки</p>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('wt_title')}</h1>
+      <p className="screen-subtitle">{t('wt_subtitle')}</p>
       <input
         type="search"
-        placeholder="Поиск по номеру или диаметру…"
+        placeholder={t('wt_search')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         style={{ marginBottom: 12 }}
@@ -27,7 +29,7 @@ export default function WireTable() {
       <div className="card" style={{ padding: '4px 12px' }}>
         <table className="wire-table">
           <thead>
-            <tr><th>№ проволоки</th><th>Диаметр, мм</th></tr>
+            <tr><th>{t('wt_col_nr')}</th><th>{t('wt_col_mm')}</th></tr>
           </thead>
           <tbody>
             {filtered.map((row) => (
@@ -35,7 +37,7 @@ export default function WireTable() {
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <div className="empty-state">Ничего не найдено</div>}
+        {filtered.length === 0 && <div className="empty-state">{t('wt_empty')}</div>}
       </div>
     </div>
   )
