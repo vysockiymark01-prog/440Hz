@@ -9,7 +9,7 @@ export default function WorkOrderChecklist() {
   const orderId = searchParams.get('order')
   const storageKey = orderId ? `pt_workorder_checked_v1_${orderId}` : 'pt_workorder_checked_v1'
   const [checked, setChecked] = useLocalStorage(storageKey, {})
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }))
   const reset = () => setChecked({})
@@ -34,7 +34,7 @@ export default function WorkOrderChecklist() {
           <label key={s.id} className={`checklist-item ${checked[s.id] ? 'done' : ''}`}>
             <input type="checkbox" checked={!!checked[s.id]} onChange={() => toggle(s.id)} />
             <span className="checklist-text">
-              <strong>{i + 1}. {s.title}.</strong> {s.text}
+              <strong>{i + 1}. {tr(s.title)}.</strong> {tr(s.text)}
             </span>
           </label>
         ))}

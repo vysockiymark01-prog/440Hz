@@ -19,7 +19,7 @@ export default function FieldVisit() {
   const [diagChecked, setDiagChecked] = useLocalStorage('pt_diagnostic_checked_v1', {})
   const [workChecked, setWorkChecked] = useLocalStorage('pt_workorder_checked_v1', {})
   const [shareStatus, setShareStatus] = useState(null)
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   const toggleDiag = (id) => setDiagChecked((c) => ({ ...c, [id]: !c[id] }))
   const toggleWork = (id) => setWorkChecked((c) => ({ ...c, [id]: !c[id] }))
@@ -56,7 +56,7 @@ export default function FieldVisit() {
         {diagnosticStages.map((s) => (
           <label key={s.id} className={`checklist-item ${diagChecked[s.id] ? 'done' : ''}`}>
             <input type="checkbox" checked={!!diagChecked[s.id]} onChange={() => toggleDiag(s.id)} />
-            <span className="checklist-text">{s.title}</span>
+            <span className="checklist-text">{tr(s.title)}</span>
           </label>
         ))}
       </div>
@@ -70,7 +70,7 @@ export default function FieldVisit() {
         {workOrderSteps.map((s, i) => (
           <label key={s.id} className={`checklist-item ${workChecked[s.id] ? 'done' : ''}`}>
             <input type="checkbox" checked={!!workChecked[s.id]} onChange={() => toggleWork(s.id)} />
-            <span className="checklist-text">{i + 1}. {s.title}</span>
+            <span className="checklist-text">{i + 1}. {tr(s.title)}</span>
           </label>
         ))}
       </div>

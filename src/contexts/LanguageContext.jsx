@@ -42,8 +42,16 @@ export function LanguageProvider({ children }) {
     [lang]
   )
 
+  // tr({ru: '...', mn: '...'}) — для локализованных полей внутри объектов данных
+  // (чек-листы, фразы, лекции и т.п.), в отличие от t(), которая берёт текст по ключу
+  // из общего словаря интерфейса.
+  const tr = useCallback(
+    (field) => field?.[lang] ?? field?.ru ?? '',
+    [lang]
+  )
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={{ lang, setLang, t, tr }}>
       {children}
     </LanguageContext.Provider>
   )

@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function CommonMistakes() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   return (
     <div>
@@ -21,8 +21,8 @@ export default function CommonMistakes() {
               borderBottom: i < commonMistakes.length - 1 ? '1px solid var(--border)' : 'none',
             }}
           >
-            <div style={{ fontWeight: 700 }}>⚠️ {m.title}</div>
-            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>{m.text}</div>
+            <div style={{ fontWeight: 700 }}>⚠️ {tr(m.title)}</div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>{tr(m.text)}</div>
           </div>
         ))}
       </div>

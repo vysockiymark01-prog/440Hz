@@ -9,7 +9,7 @@ export default function DiagnosticChecklist() {
   const orderId = searchParams.get('order')
   const storageKey = orderId ? `pt_diagnostic_checked_v1_${orderId}` : 'pt_diagnostic_checked_v1'
   const [checked, setChecked] = useLocalStorage(storageKey, {})
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }))
   const reset = () => setChecked({})
@@ -34,7 +34,7 @@ export default function DiagnosticChecklist() {
           <label key={s.id} className={`checklist-item ${checked[s.id] ? 'done' : ''}`}>
             <input type="checkbox" checked={!!checked[s.id]} onChange={() => toggle(s.id)} />
             <span className="checklist-text">
-              <strong>{s.title}.</strong> {s.text}
+              <strong>{tr(s.title)}.</strong> {tr(s.text)}
             </span>
           </label>
         ))}
@@ -46,7 +46,7 @@ export default function DiagnosticChecklist() {
       <div className="card">
         {doNotBuyOrTune.map((text, i) => (
           <p key={i} style={{ marginBottom: i === doNotBuyOrTune.length - 1 ? 0 : 10 }}>
-            ⚠️ {text}
+            ⚠️ {tr(text)}
           </p>
         ))}
       </div>
