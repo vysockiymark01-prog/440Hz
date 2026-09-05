@@ -3,24 +3,38 @@ import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
 import orderOperations from '../../data/orderOperations.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-const MONTH_NAMES = [
-  'январь', 'февраль', 'март', 'апрель', 'май', 'июнь',
-  'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь',
-]
+const MONTH_NAMES = {
+  ru: ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'],
+  mn: ['1-р сар', '2-р сар', '3-р сар', '4-р сар', '5-р сар', '6-р сар', '7-р сар', '8-р сар', '9-р сар', '10-р сар', '11-р сар', '12-р сар'],
+}
 
 function monthKey(dateStr) {
   const d = new Date(dateStr)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-function monthLabel(key) {
+function monthLabel(key, lang) {
   const [year, month] = key.split('-').map(Number)
-  return `${MONTH_NAMES[month - 1]} ${year}`
+  const names = MONTH_NAMES[lang] || MONTH_NAMES.ru
+  return `${names[month - 1]} ${year}`
 }
 
 function pad(n) {
   return String(n).padStart(2, '0')
+}
+
+// Хромиум-браузерүүдийн ICU-д mn-MN бүрэн дэмжигдэхгүй байж болзошгүй тул
+// огноог гараар (тоон сар) форматлана, toLocaleDateString('mn-MN', ...) дээр найдахгүй.
+function shortDate(d, lang) {
+  if (lang === 'mn') return `${d.getMonth() + 1}-р сарын ${d.getDate()}`
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
+function longDate(d, lang) {
+  if (lang === 'mn') return `${d.getMonth() + 1}-р сарын ${d.getDate()}`
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
 function toDateInput(d) {
@@ -49,8 +63,15 @@ function timeToMin(t) {
   return h * 60 + m
 }
 
+function orderCountLabel(count, t) {
+  if (count === 1) return t('ost_order_one')
+  if (count >= 2 && count <= 4) return t('ost_order_few')
+  return t('ost_order_many')
+}
+
 export default function OrderStats() {
   const navigate = useNavigate()
+  const { t, tr, lang } = useLanguage()
   const [items] = useLocalStorage('pt_my_orders_v1', [])
   const [rangeMode, setRangeMode] = useState('week') // 'week' | 'month' | 'custom'
   const today = useMemo(() => new Date(), [])
@@ -84,7 +105,7 @@ export default function OrderStats() {
       return {
         rangeStart: start,
         rangeEnd: end,
-        rangeLabel: `неделя ${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`,
+        rangeLabel: `${shortDate(start, lang)} – ${shortDate(end, lang)}`,
       }
     }
     if (rangeMode === 'month') {
@@ -93,7 +114,7 @@ export default function OrderStats() {
       return {
         rangeStart: start,
         rangeEnd: end,
-        rangeLabel: monthLabel(monthKey(start)),
+        rangeLabel: monthLabel(monthKey(start), lang),
       }
     }
     const start = customFrom ? new Date(`${customFrom}T00:00:00`) : null
@@ -102,10 +123,10 @@ export default function OrderStats() {
       rangeStart: start,
       rangeEnd: end,
       rangeLabel: start && end
-        ? `${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })} – ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}`
-        : 'выберите даты',
+        ? `${longDate(start, lang)} – ${longDate(end, lang)}`
+        : t('ost_choose_dates'),
     }
-  }, [rangeMode, today, customFrom, customTo])
+  }, [rangeMode, today, customFrom, customTo, lang, t])
 
   const inRange = priced.filter((it) => {
     if (!it.date || !rangeStart || !rangeEnd) return false
@@ -152,20 +173,16 @@ export default function OrderStats() {
     })
     return total
   }, [items, rangeStart, rangeEnd])
-  const roadHoursLabel = `${Math.floor(roadMinutes / 60)} ч ${roadMinutes % 60} мин`
+  const roadHoursLabel = `${Math.floor(roadMinutes / 60)} ${t('ost_hours_short')} ${roadMinutes % 60} ${t('ost_minutes_short')}`
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools/my-orders')}>‹ Мои заказы</button>
-      <h1 className="screen-title">Статистика заработка</h1>
-      <p className="screen-subtitle">
-        Считается по заказам с отмеченными операциями и указанными ценами. Данные берутся из «Моих заказов».
-      </p>
+      <button className="back-link" onClick={() => navigate('/tools/my-orders')}>‹ {t('tools_item_my_orders')}</button>
+      <h1 className="screen-title">{t('tools_item_order_stats')}</h1>
+      <p className="screen-subtitle">{t('ost_subtitle')}</p>
 
       {priced.length === 0 ? (
-        <div className="empty-state">
-          Пока нет заказов с ценами — отметьте операции и укажите стоимость в «Моих заказах».
-        </div>
+        <div className="empty-state">{t('ost_empty')}</div>
       ) : (
         <>
           <div className="theme-options" style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
@@ -174,32 +191,32 @@ export default function OrderStats() {
               style={{ flex: 1, textAlign: 'center', padding: '10px 6px' }}
               onClick={() => setRangeMode('week')}
             >
-              Эта неделя
+              {t('ost_range_week')}
             </button>
             <button
               className={`theme-option ${rangeMode === 'month' ? 'active' : ''}`}
               style={{ flex: 1, textAlign: 'center', padding: '10px 6px' }}
               onClick={() => setRangeMode('month')}
             >
-              Этот месяц
+              {t('ost_range_month')}
             </button>
             <button
               className={`theme-option ${rangeMode === 'custom' ? 'active' : ''}`}
               style={{ flex: 1, textAlign: 'center', padding: '10px 6px' }}
               onClick={() => setRangeMode('custom')}
             >
-              Свой период
+              {t('ost_range_custom')}
             </button>
           </div>
 
           {rangeMode === 'custom' && (
             <div className="row" style={{ gap: 10, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>С</label>
+                <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>{t('ost_range_from')}</label>
                 <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>По</label>
+                <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>{t('ost_range_to')}</label>
                 <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
               </div>
             </div>
@@ -208,16 +225,16 @@ export default function OrderStats() {
           <div className="card" style={{ textAlign: 'center', marginBottom: 16 }}>
             <div className="big-number">{rangeSum.toLocaleString('ru-RU')} ₽</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
-              {rangeLabel} · {inRange.length} {inRange.length === 1 ? 'заказ' : 'заказов'}
+              {rangeLabel} · {inRange.length} {orderCountLabel(inRange.length, t)}
             </div>
             {rangeExpenses > 0 && (
               <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>
-                расходы: {rangeExpenses.toLocaleString('ru-RU')} ₽ · прибыль: {rangeProfit.toLocaleString('ru-RU')} ₽
+                {t('ost_expenses_profit', { expenses: rangeExpenses.toLocaleString('ru-RU'), profit: rangeProfit.toLocaleString('ru-RU') })}
               </div>
             )}
             {roadMinutes > 0 && (
               <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>
-                🚗 в разъездах между визитами: ~{roadHoursLabel}
+                {t('ost_road_time', { time: roadHoursLabel })}
               </div>
             )}
           </div>
@@ -225,37 +242,37 @@ export default function OrderStats() {
           <div className="row" style={{ gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
             <div className="card" style={{ flex: '1 1 30%', textAlign: 'center' }}>
               <div className="big-number" style={{ fontSize: 22 }}>{grandTotal.toLocaleString('ru-RU')} ₽</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>всего заработано</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('ost_total_earned')}</div>
             </div>
             <div className="card" style={{ flex: '1 1 30%', textAlign: 'center' }}>
               <div className="big-number" style={{ fontSize: 22 }}>{avgCheck.toLocaleString('ru-RU')} ₽</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>средний чек</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('ost_avg_check')}</div>
             </div>
             <div className="card" style={{ flex: '1 1 30%', textAlign: 'center' }}>
               <div className="big-number" style={{ fontSize: 22 }}>{priced.length}</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>заказов с ценой</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('ost_orders_with_price')}</div>
             </div>
           </div>
 
           <div className="row" style={{ gap: 10, marginBottom: 16 }}>
             <div className="card" style={{ flex: 1, textAlign: 'center' }}>
               <div className="big-number" style={{ fontSize: 22 }}>{grandExpenses.toLocaleString('ru-RU')} ₽</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>расходы на материалы</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('ost_material_expenses')}</div>
             </div>
             <div className="card" style={{ flex: 1, textAlign: 'center' }}>
               <div className="big-number" style={{ fontSize: 22 }}>{grandProfit.toLocaleString('ru-RU')} ₽</div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>чистая прибыль</div>
+              <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('ost_net_profit')}</div>
             </div>
           </div>
 
-          <h3 style={{ marginBottom: 8 }}>По месяцам</h3>
+          <h3 style={{ marginBottom: 8 }}>{t('ost_by_month')}</h3>
           {months.map((key) => (
             <div key={key} className="card row" style={{ alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{monthLabel(key)}</div>
+                <div style={{ fontWeight: 700, textTransform: 'capitalize' }}>{monthLabel(key, lang)}</div>
                 <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
-                  {byMonth[key].count} {byMonth[key].count === 1 ? 'заказ' : 'заказа'}
-                  {byMonth[key].expenses > 0 ? ` · прибыль ${(byMonth[key].sum - byMonth[key].expenses).toLocaleString('ru-RU')} ₽` : ''}
+                  {byMonth[key].count} {orderCountLabel(byMonth[key].count, t)}
+                  {byMonth[key].expenses > 0 ? ` · ${t('ost_net_profit')} ${(byMonth[key].sum - byMonth[key].expenses).toLocaleString('ru-RU')} ₽` : ''}
                 </div>
               </div>
               <div style={{ fontWeight: 700 }}>{byMonth[key].sum.toLocaleString('ru-RU')} ₽</div>
@@ -264,14 +281,14 @@ export default function OrderStats() {
 
           {opStatsTotal >= 3 && blindSpots.length > 0 && (
             <>
-              <h3 style={{ marginBottom: 8 }}>Слепые зоны</h3>
+              <h3 style={{ marginBottom: 8 }}>{t('ost_blind_spots')}</h3>
               <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: -4, marginBottom: 8 }}>
-                Эти операции реже всего попадают в чек-лист — возможно, вы иногда упускаете их из виду.
+                {t('ost_blind_spots_desc')}
               </p>
               {blindSpots.map((op) => (
                 <div key={op.id} className="card row" style={{ alignItems: 'center' }}>
-                  <span>{op.title}</span>
-                  <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{op.pct}% заказов ({op.count})</span>
+                  <span>{tr(op.title)}</span>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{t('ost_pct_orders', { pct: op.pct, count: op.count })}</span>
                 </div>
               ))}
             </>

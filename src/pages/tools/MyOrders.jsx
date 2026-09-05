@@ -5,6 +5,7 @@ import orderOperations from '../../data/orderOperations.js'
 import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
 import { clientKey } from '../../utils/clientKey.js'
 import { getRemainingChecklist } from '../../utils/remainingWork.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const CONTINUE_DRAFT_KEY = 'pt_continue_draft_v1'
 
@@ -29,7 +30,7 @@ function formatIcsDate(d) {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`
 }
 
-function getOverdueClients(items) {
+function getOverdueClients(items, noNameLabel) {
   const groups = {}
   items.forEach((it) => {
     if (!it.date) return
@@ -38,7 +39,7 @@ function getOverdueClients(items) {
     if (!groups[key] || new Date(it.date) > new Date(groups[key].latest)) {
       groups[key] = {
         key,
-        label: it.clientName || it.brand || 'Без имени',
+        label: it.clientName || it.brand || noNameLabel,
         latest: it.date,
         phone: it.phone,
       }
@@ -136,7 +137,7 @@ function shareEstimate(order) {
   const lines = included.map((s) => {
     const price = order.prices?.[s.id]
     const priceText = typeof price === 'number' && !Number.isNaN(price) && price > 0 ? ` — ${price} ₽` : ''
-    return `• ${s.title}${priceText}`
+    return `• ${s.title.ru}${priceText}`
   })
   const total = orderTotal(order)
   const headerParts = ['Смета']
@@ -165,7 +166,7 @@ function buildIcs(order) {
     const lines = included.map((s) => {
       const price = order.prices?.[s.id]
       const priceText = typeof price === 'number' && !Number.isNaN(price) && price > 0 ? `${price} ₽` : 'без цены'
-      return `- ${s.title}: ${priceText}`
+      return `- ${s.title.ru}: ${priceText}`
     })
     descriptionParts.push(`Операции:\n${lines.join('\n')}`)
   }
@@ -221,7 +222,7 @@ function downloadCsv(items) {
   const rows = items.map((it) => {
     const opsText = orderOperations
       .filter((op) => it.checklist?.[op.id])
-      .map((op) => op.title)
+      .map((op) => op.title.ru)
       .join(', ')
     return [
       it.date || '',
@@ -257,26 +258,30 @@ function downloadCsv(items) {
   URL.revokeObjectURL(url)
 }
 
-function dateTimeLabel(dateStr, timeStr, endTimeStr) {
-  if (!dateStr) return { text: 'дата не указана', past: false }
+function dateTimeLabel(dateStr, timeStr, endTimeStr, t, lang) {
+  if (!dateStr) return { text: t('mo_date_unset'), past: false }
   const dt = new Date(`${dateStr}T${timeStr || '00:00'}`)
   const now = new Date()
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
   const diffDays = Math.round((startOfDay(dt) - startOfDay(now)) / 86400000)
 
   let relative
-  if (diffDays === 0) relative = 'сегодня'
-  else if (diffDays === 1) relative = 'завтра'
-  else if (diffDays === -1) relative = 'вчера'
-  else if (diffDays > 1) relative = `через ${diffDays} дн.`
-  else relative = `${Math.abs(diffDays)} дн. назад`
+  if (diffDays === 0) relative = t('mo_date_today')
+  else if (diffDays === 1) relative = t('mo_date_tomorrow')
+  else if (diffDays === -1) relative = t('mo_date_yesterday')
+  else if (diffDays > 1) relative = t('mo_date_in_days', { n: diffDays })
+  else relative = t('mo_date_days_ago', { n: Math.abs(diffDays) })
 
-  const datePart = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  // Хромиум-браузерүүдийн ICU-д mn-MN бүрэн дэмжигдэхгүй байж болзошгүй тул
+  // огноог гараар (тоон сар) форматлана, toLocaleDateString('mn-MN', ...) дээр найдахгүй.
+  const datePart = lang === 'mn'
+    ? `${dt.getMonth() + 1}-р сарын ${dt.getDate()}`
+    : dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   const timePart = timeStr ? `, ${timeStr}${endTimeStr ? `–${endTimeStr}` : ''}` : ''
   return { text: `${datePart}${timePart} · ${relative}`, past: diffDays < 0 }
 }
 
-function ChecklistFields({ checklist, prices, onToggle, onPriceChange }) {
+function ChecklistFields({ checklist, prices, onToggle, onPriceChange, tr }) {
   return (
     <div>
       {orderOperations.map((s, i) => (
@@ -302,7 +307,7 @@ function ChecklistFields({ checklist, prices, onToggle, onPriceChange }) {
                 color: checklist?.[s.id] ? 'var(--text)' : 'var(--text-dim)',
               }}
             >
-              {s.title}
+              {tr(s.title)}
             </span>
           </label>
           <input
@@ -321,6 +326,7 @@ function ChecklistFields({ checklist, prices, onToggle, onPriceChange }) {
 
 export default function MyOrders() {
   const navigate = useNavigate()
+  const { t, tr, lang } = useLanguage()
   const [items, setItems] = useLocalStorage('pt_my_orders_v1', [])
   const [brand, setBrand] = useState('')
   const [clientName, setClientName] = useState('')
@@ -384,10 +390,10 @@ export default function MyOrders() {
   const saveTemplate = () => {
     const hasAny = Object.values(formChecklist).some(Boolean)
     if (!hasAny) {
-      alert('Сначала отметьте хотя бы одну работу, чтобы сохранить шаблон.')
+      alert(t('mo_alert_template_empty'))
       return
     }
-    const name = window.prompt('Название шаблона (например: Быстрая настройка):', '')
+    const name = window.prompt(t('mo_prompt_template_name'), '')
     if (!name || !name.trim()) return
     setTemplates((prev) => [
       ...prev,
@@ -433,7 +439,7 @@ export default function MyOrders() {
   const toggleListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      alert('Голосовой ввод не поддерживается в этом браузере.')
+      alert(t('mo_alert_no_voice'))
       return
     }
     if (listening) {
@@ -459,14 +465,14 @@ export default function MyOrders() {
   const addToBlacklist = (it) => {
     const key = clientKey(it)
     if (!key) {
-      alert('Укажите телефон или имя клиента, чтобы добавить в чёрный список.')
+      alert(t('mo_alert_need_client_info'))
       return
     }
     if (findBlacklistEntry(key)) return
-    const reason = window.prompt('Причина (например: не заплатил, конфликтный клиент):', '') || ''
+    const reason = window.prompt(t('mo_prompt_blacklist_reason'), '') || ''
     setBlacklist((prev) => [
       ...prev,
-      { key, label: it.clientName || it.brand || 'Без имени', phone: it.phone || '', reason, addedAt: new Date().toISOString() },
+      { key, label: it.clientName || it.brand || t('mo_no_name'), phone: it.phone || '', reason, addedAt: new Date().toISOString() },
     ])
   }
 
@@ -666,7 +672,7 @@ export default function MyOrders() {
     return true
   })
 
-  const overdueClients = getOverdueClients(items)
+  const overdueClients = getOverdueClients(items, t('mo_no_name'))
   const todayOrders = getTodayOrders(items)
   const debtors = getDebtors(items)
   const returningMap = getReturningMap(items)
@@ -678,28 +684,30 @@ export default function MyOrders() {
       )
     : todayOrders
 
+  const paymentLabel = (status) => t(`mo_payment_${status || 'unpaid'}`)
+  const paymentMethodLabel = (method) => t(`mo_payment_method_${method}`)
+
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
       <div className="row" style={{ alignItems: 'flex-start' }}>
-        <h1 className="screen-title" style={{ marginBottom: 0 }}>Мои заказы</h1>
+        <h1 className="screen-title" style={{ marginBottom: 0 }}>{t('mo_title')}</h1>
         <span style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-sm" onClick={() => navigate('/tools/order-stats')}>📊 Статистика</button>
+          <button className="btn btn-sm" onClick={() => navigate('/tools/order-stats')}>{t('mo_stats_btn')}</button>
           {items.length > 0 && (
-            <button className="btn btn-sm" onClick={() => downloadCsv(items)}>⬇️ CSV</button>
+            <button className="btn btn-sm" onClick={() => downloadCsv(items)}>{t('mo_csv_btn')}</button>
           )}
         </span>
       </div>
       <p className="screen-subtitle" style={{ marginTop: 8 }}>
-        Клиенты, даты и чек-лист операций с ценами по каждому заказу. Дату и время можно
-        экспортировать в календарь телефона или планшета. Хранится только на этом устройстве.
+        {t('mo_subtitle')}
       </p>
 
       {isHeatingSeason() && (
         <div className="card" style={{ borderColor: 'var(--accent)' }}>
-          <div style={{ fontWeight: 700 }}>🔥 Отопительный сезон</div>
+          <div style={{ fontWeight: 700 }}>{t('mo_heating_title')}</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
-            Сухой воздух от отопления быстрее расстраивает инструменты — хороший повод напомнить клиентам о настройке.
+            {t('mo_heating_desc')}
           </div>
         </div>
       )}
@@ -707,12 +715,12 @@ export default function MyOrders() {
       {todayOrders.length > 0 && (
         <div className="card" style={{ borderColor: 'var(--accent)' }}>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            📅 Сегодня {todayOrders.length === 1 ? 'визит' : `визитов: ${todayOrders.length}`}
+            📅 {t('mo_today_prefix')} {todayOrders.length === 1 ? t('mo_today_visit_one') : t('mo_today_visits_n', { n: todayOrders.length })}
           </div>
           {reorderedToday.map((o, i) => (
             <div key={o.id} className="row" style={{ padding: '6px 0', fontSize: 13, alignItems: 'flex-start' }}>
               <span>
-                {o.time && <b>{o.time}</b>}{o.time ? ' — ' : ''}{o.clientName || o.brand || 'Без имени'}
+                {o.time && <b>{o.time}</b>}{o.time ? ' — ' : ''}{o.clientName || o.brand || t('mo_no_name')}
               </span>
               <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 {o.address && <span style={{ color: 'var(--text-dim)' }}>{o.address}</span>}
@@ -721,7 +729,7 @@ export default function MyOrders() {
                   style={{ padding: '4px 8px' }}
                   disabled={i === 0}
                   onClick={() => moveTodayOrder(o.id, -1)}
-                  aria-label="Выше"
+                  aria-label={t('mo_up')}
                 >
                   ▲
                 </button>
@@ -730,7 +738,7 @@ export default function MyOrders() {
                   style={{ padding: '4px 8px' }}
                   disabled={i === reorderedToday.length - 1}
                   onClick={() => moveTodayOrder(o.id, 1)}
-                  aria-label="Ниже"
+                  aria-label={t('mo_down')}
                 >
                   ▼
                 </button>
@@ -744,9 +752,9 @@ export default function MyOrders() {
         <div className="card" style={{ borderColor: 'var(--accent)' }}>
           <div className="row" style={{ alignItems: 'flex-start', marginBottom: 8 }}>
             <div style={{ fontWeight: 700 }}>
-              ⏰ {overdueClients.length} {overdueClients.length === 1 ? 'клиента пора пригласить' : 'клиентов пора пригласить'} на повторную настройку
+              ⏰ {overdueClients.length} {overdueClients.length === 1 ? t('mo_overdue_singular') : t('mo_overdue_plural')} {t('mo_overdue_suffix')}
             </div>
-            <button className="btn btn-sm" onClick={() => shareBulkReminder(overdueClients)}>✉️ Напомнить всем</button>
+            <button className="btn btn-sm" onClick={() => shareBulkReminder(overdueClients)}>{t('mo_remind_all')}</button>
           </div>
           {overdueClients.map((g) => {
             const monthsAgo = Math.floor((new Date() - new Date(g.latest)) / 86400000 / 30)
@@ -754,7 +762,7 @@ export default function MyOrders() {
               <div key={g.key} className="row" style={{ padding: '6px 0', fontSize: 13 }}>
                 <span>{g.label}</span>
                 <span style={{ color: 'var(--text-dim)' }}>
-                  {monthsAgo} мес. назад
+                  {t('mo_months_ago', { n: monthsAgo })}
                   {g.phone && <> · <a href={`tel:${g.phone.replace(/[^+\d]/g, '')}`}>{g.phone}</a></>}
                 </span>
               </div>
@@ -766,18 +774,18 @@ export default function MyOrders() {
       {debtors.length > 0 && (
         <div className="card" style={{ borderColor: 'var(--danger)' }}>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            💰 {debtors.length === 1 ? 'Есть должник' : `Должников: ${debtors.length}`}
+            💰 {debtors.length === 1 ? t('mo_debtor_one') : t('mo_debtor_n', { n: debtors.length })}
           </div>
           {debtors.map((d) => (
             <div key={d.id} className="row" style={{ padding: '6px 0', fontSize: 13 }}>
-              <span>{d.clientName || d.brand || 'Без имени'}</span>
+              <span>{d.clientName || d.brand || t('mo_no_name')}</span>
               <button
                 className="pill"
                 style={{ border: 'none', cursor: 'pointer', color: 'var(--danger)', background: 'none' }}
                 onClick={() => togglePaymentStatus(d.id)}
-                title="Нажмите, чтобы отметить оплату"
+                title={t('mo_toggle_payment_hint')}
               >
-                {d.total.toLocaleString('ru-RU')} ₽ · {PAYMENT_LABELS[d.paymentStatus] || PAYMENT_LABELS.unpaid}
+                {d.total.toLocaleString('ru-RU')} ₽ · {paymentLabel(d.paymentStatus)}
               </button>
             </div>
           ))}
@@ -791,7 +799,7 @@ export default function MyOrders() {
             style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
             onClick={() => setBlacklistOpen((v) => !v)}
           >
-            <span style={{ fontWeight: 700 }}>🚫 Чёрный список: {blacklist.length}</span>
+            <span style={{ fontWeight: 700 }}>{t('mo_blacklist_title', { n: blacklist.length })}</span>
             <span>{blacklistOpen ? '▲' : '▼'}</span>
           </button>
           {blacklistOpen && blacklist.map((b) => (
@@ -800,14 +808,14 @@ export default function MyOrders() {
                 <div style={{ fontWeight: 700 }}>{b.label}</div>
                 {b.reason && <div style={{ color: 'var(--text-dim)' }}>{b.reason}</div>}
               </span>
-              <button className="btn btn-sm" onClick={() => removeFromBlacklist(b.key)}>Убрать</button>
+              <button className="btn btn-sm" onClick={() => removeFromBlacklist(b.key)}>{t('mo_remove')}</button>
             </div>
           ))}
         </div>
       )}
 
       <div className="card" ref={formCardRef}>
-        <h3 style={{ marginTop: 0 }}>Добавить заказ</h3>
+        <h3 style={{ marginTop: 0 }}>{t('mo_add_order')}</h3>
 
         <div className="theme-options" style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
           <button
@@ -815,95 +823,95 @@ export default function MyOrders() {
             style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
             onClick={() => setClientType('person')}
           >
-            Физлицо
+            {t('mo_person')}
           </button>
           <button
             className={`theme-option ${clientType === 'org' ? 'active' : ''}`}
             style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
             onClick={() => setClientType('org')}
           >
-            Организация
+            {t('mo_org')}
           </button>
         </div>
 
         {formBlacklistMatch && (
           <div className="result-flash bad" style={{ marginBottom: 10 }}>
-            ⚠️ Этот клиент в чёрном списке{formBlacklistMatch.reason ? `: ${formBlacklistMatch.reason}` : ''}
+            {t('mo_blacklist_warning')}{formBlacklistMatch.reason ? `: ${formBlacklistMatch.reason}` : ''}
           </div>
         )}
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Инструмент (марка / модель)
+            {t('mo_label_instrument')}
           </label>
-          <input type="text" placeholder="например, Petrof P118" value={brand} onChange={(e) => setBrand(e.target.value)} />
+          <input type="text" placeholder={t('mo_ph_instrument')} value={brand} onChange={(e) => setBrand(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Серийный номер (необязательно)
+            {t('mo_label_serial')}
           </label>
           <input
             type="text"
-            placeholder="например, 123456"
+            placeholder={t('mo_ph_serial')}
             value={serialNumber}
             onChange={(e) => setSerialNumber(e.target.value)}
           />
           {serialNumber.trim() && items.some((it) => it.serialNumber && it.serialNumber === serialNumber.trim()) && (
             <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 4 }}>
-              Этот инструмент уже встречался — история визитов сохранится по номеру.
+              {t('mo_serial_seen')}
             </div>
           )}
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            {clientType === 'org' ? 'Название организации' : 'Имя клиента'}
+            {clientType === 'org' ? t('mo_label_org_name') : t('mo_label_client_name')}
           </label>
           <input
             type="text"
-            placeholder={clientType === 'org' ? 'например, Детская школа искусств №3' : 'например, Ирина'}
+            placeholder={clientType === 'org' ? t('mo_ph_org_name') : t('mo_ph_client_name')}
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
           />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Телефон
+            {t('mo_label_phone')}
           </label>
-          <input type="tel" placeholder="например, +7 900 123-45-67" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input type="tel" placeholder={t('mo_ph_phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Адрес
+            {t('mo_label_address')}
           </label>
-          <input type="text" placeholder="например, ул. Ленина, 10, кв. 5" value={address} onChange={(e) => setAddress(e.target.value)} />
+          <input type="text" placeholder={t('mo_ph_address')} value={address} onChange={(e) => setAddress(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Дата визита
+            {t('mo_label_date')}
           </label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="row" style={{ gap: 10, marginBottom: 10 }}>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Начало работы
+              {t('mo_label_start_time')}
             </label>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-              Окончание
+              {t('mo_label_end_time')}
             </label>
             <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
         </div>
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Заметка
+            {t('mo_label_note')}
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="text"
-              placeholder="например, особенности инструмента"
+              placeholder={t('mo_ph_note')}
               value={note}
               onChange={(e) => setNote(e.target.value)}
               style={{ flex: 1 }}
@@ -912,7 +920,7 @@ export default function MyOrders() {
               type="button"
               className={`btn btn-sm ${listening ? 'btn-primary' : ''}`}
               onClick={toggleListening}
-              aria-label="Голосовой ввод заметки"
+              aria-label={t('mo_voice_input')}
             >
               {listening ? '⏹️' : '🎙️'}
             </button>
@@ -920,12 +928,12 @@ export default function MyOrders() {
         </div>
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Особенности (теги)
+            {t('mo_label_tags')}
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               type="text"
-              placeholder="например, скрипучая педаль"
+              placeholder={t('mo_ph_tags')}
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFormTag() } }}
@@ -935,14 +943,14 @@ export default function MyOrders() {
           </div>
           {formTags.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-              {formTags.map((t) => (
-                <span key={t} className="pill" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {t}
+              {formTags.map((tag) => (
+                <span key={tag} className="pill" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {tag}
                   <button
                     type="button"
-                    onClick={() => removeFormTag(t)}
+                    onClick={() => removeFormTag(tag)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'inherit' }}
-                    aria-label={`Убрать тег ${t}`}
+                    aria-label={t('mo_remove_tag', { tag })}
                   >
                     ✕
                   </button>
@@ -953,18 +961,18 @@ export default function MyOrders() {
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Взять с собой
+            {t('mo_label_packing')}
           </label>
           <input
             type="text"
-            placeholder="например, струна №34, войлок для молоточков"
+            placeholder={t('mo_ph_packing')}
             value={packingList}
             onChange={(e) => setPackingList(e.target.value)}
           />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Расходы на материалы, ₽
+            {t('mo_label_expenses')}
           </label>
           <input
             type="number"
@@ -981,26 +989,26 @@ export default function MyOrders() {
             onChange={(e) => setIsWarranty(e.target.checked)}
             style={{ width: 18, height: 18, accentColor: 'var(--accent)' }}
           />
-          <span style={{ fontSize: 13 }}>Гарантийный визит (без оплаты)</span>
+          <span style={{ fontSize: 13 }}>{t('mo_warranty_checkbox')}</span>
         </label>
 
         <div className="row" style={{ alignItems: 'center', marginBottom: 4 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-            Какие работы планируются
+            {t('mo_label_planned_work')}
           </label>
-          <button className="btn btn-sm" onClick={saveTemplate}>💾 Сохранить как шаблон</button>
+          <button className="btn btn-sm" onClick={saveTemplate}>{t('mo_save_template')}</button>
         </div>
 
         {templates.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-            {templates.map((t) => (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <button className="btn btn-sm" onClick={() => applyTemplate(t)}>{t.name}</button>
+            {templates.map((tpl) => (
+              <div key={tpl.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button className="btn btn-sm" onClick={() => applyTemplate(tpl)}>{tpl.name}</button>
                 <button
                   className="btn btn-sm"
                   style={{ padding: '8px 10px' }}
-                  onClick={() => removeTemplate(t.id)}
-                  aria-label={`Удалить шаблон ${t.name}`}
+                  onClick={() => removeTemplate(tpl.id)}
+                  aria-label={t('mo_remove_template', { name: tpl.name })}
                 >
                   ✕
                 </button>
@@ -1014,10 +1022,11 @@ export default function MyOrders() {
           prices={formPrices}
           onToggle={toggleFormChecklistItem}
           onPriceChange={setFormPrice}
+          tr={tr}
         />
 
         <button className="btn btn-block btn-primary" style={{ marginTop: 12 }} onClick={addItem} disabled={!brand.trim() && !clientName.trim()}>
-          Добавить
+          {t('mo_add_btn')}
         </button>
       </div>
 
@@ -1025,7 +1034,7 @@ export default function MyOrders() {
         <>
           <input
             type="text"
-            placeholder="Поиск по имени, телефону, адресу…"
+            placeholder={t('mo_search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ marginBottom: 10 }}
@@ -1036,35 +1045,35 @@ export default function MyOrders() {
               style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
               onClick={() => setFilterMode('all')}
             >
-              Все
+              {t('mo_filter_all')}
             </button>
             <button
               className={`theme-option ${filterMode === 'upcoming' ? 'active' : ''}`}
               style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
               onClick={() => setFilterMode('upcoming')}
             >
-              Предстоящие
+              {t('mo_filter_upcoming')}
             </button>
             <button
               className={`theme-option ${filterMode === 'past' ? 'active' : ''}`}
               style={{ flex: 1, textAlign: 'center', padding: '8px 6px', fontSize: 13 }}
               onClick={() => setFilterMode('past')}
             >
-              Прошедшие
+              {t('mo_filter_past')}
             </button>
           </div>
         </>
       )}
 
       {items.length === 0 && (
-        <div className="empty-state">Список пуст — добавьте первый заказ выше.</div>
+        <div className="empty-state">{t('mo_empty_none')}</div>
       )}
       {items.length > 0 && filtered.length === 0 && (
-        <div className="empty-state">Ничего не найдено.</div>
+        <div className="empty-state">{t('mo_empty_search')}</div>
       )}
 
       {filtered.map((it) => {
-        const label = dateTimeLabel(it.date, it.time, it.endTime)
+        const label = dateTimeLabel(it.date, it.time, it.endTime, t, lang)
         const doneCount = orderOperations.filter((s) => it.checklist?.[s.id]).length
         const total = orderTotal(it)
         const isOpen = expanded === it.id
@@ -1074,7 +1083,7 @@ export default function MyOrders() {
               <div style={{ flex: 1 }}>
                 {(it.brand || it.clientName) && (
                   <div style={{ fontWeight: 700 }}>
-                    {it.clientType === 'org' ? '🏢 ' : ''}{it.clientName || 'Без имени'}{it.brand ? ` — ${it.brand}` : ''}
+                    {it.clientType === 'org' ? '🏢 ' : ''}{it.clientName || t('mo_no_name')}{it.brand ? ` — ${it.brand}` : ''}
                     {clientKey(it) && (
                       <span
                         style={{
@@ -1084,7 +1093,7 @@ export default function MyOrders() {
                           color: returningMap[it.id] ? 'var(--text-dim)' : 'var(--accent)',
                         }}
                       >
-                        {returningMap[it.id] ? 'постоянный' : 'новый'}
+                        {returningMap[it.id] ? t('mo_returning') : t('mo_new_client')}
                       </span>
                     )}
                   </div>
@@ -1129,48 +1138,48 @@ export default function MyOrders() {
                 {it.note && <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 4 }}>{it.note}</div>}
                 {it.tags?.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                    {it.tags.map((t) => (
-                      <span key={t} className="pill">{t}</span>
+                    {it.tags.map((tag) => (
+                      <span key={tag} className="pill">{tag}</span>
                     ))}
                   </div>
                 )}
                 <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <button className="btn btn-sm" onClick={() => setExpanded(isOpen ? null : it.id)}>
-                    Чек-лист {doneCount}/{orderOperations.length}
+                    {t('mo_checklist_btn', { done: doneCount, total: orderOperations.length })}
                   </button>
                   {it.date && (
-                    <button className="btn btn-sm" onClick={() => downloadIcs(it)}>📅 В календарь</button>
+                    <button className="btn btn-sm" onClick={() => downloadIcs(it)}>{t('mo_to_calendar')}</button>
                   )}
                   {it.date && !label.past && (
-                    <button className="btn btn-sm" onClick={() => shareReminder(it)}>✉️ Напомнить</button>
+                    <button className="btn btn-sm" onClick={() => shareReminder(it)}>{t('mo_remind')}</button>
                   )}
                   {it.date === todayStr && (
-                    <button className="btn btn-sm" onClick={() => shareOnMyWay(it)}>🚗 Выезжаю</button>
+                    <button className="btn btn-sm" onClick={() => shareOnMyWay(it)}>{t('mo_on_my_way')}</button>
                   )}
-                  <button className="btn btn-sm" onClick={() => navigate(`/tools/diagnostic?order=${it.id}`)}>🔍 Диагностика</button>
-                  <button className="btn btn-sm" onClick={() => navigate(`/tools/work-order?order=${it.id}`)}>📋 Порядок работ</button>
+                  <button className="btn btn-sm" onClick={() => navigate(`/tools/diagnostic?order=${it.id}`)}>{t('mo_diagnostic_btn')}</button>
+                  <button className="btn btn-sm" onClick={() => navigate(`/tools/work-order?order=${it.id}`)}>{t('mo_work_order_btn')}</button>
                   {doneCount > 0 && (
-                    <button className="btn btn-sm" onClick={() => shareEstimate(it)}>📤 Смета</button>
+                    <button className="btn btn-sm" onClick={() => shareEstimate(it)}>{t('mo_estimate_btn')}</button>
                   )}
-                  <button className="btn btn-sm" onClick={() => repeatOrder(it)}>🔁 Повторить</button>
+                  <button className="btn btn-sm" onClick={() => repeatOrder(it)}>{t('mo_repeat_btn')}</button>
                   {clientKey(it) && (
                     <button className="btn btn-sm" onClick={() => navigate(`/tools/clients/${encodeURIComponent(clientKey(it))}`)}>
-                      👤 Профиль
+                      {t('mo_profile_btn')}
                     </button>
                   )}
                   {it.serialNumber && (
-                    <button className="btn btn-sm" onClick={() => setSearch(it.serialNumber)}>🔧 История инструмента</button>
+                    <button className="btn btn-sm" onClick={() => setSearch(it.serialNumber)}>{t('mo_instrument_history_btn')}</button>
                   )}
                   {!findBlacklistEntry(clientKey(it)) && (
-                    <button className="btn btn-sm" onClick={() => addToBlacklist(it)}>🚫 В ЧС</button>
+                    <button className="btn btn-sm" onClick={() => addToBlacklist(it)}>{t('mo_add_blacklist_btn')}</button>
                   )}
                   {it.unfinished && (
                     <span className="pill" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
-                      ⏸ Не закончено
+                      {t('mo_unfinished_pill')}
                     </span>
                   )}
                   {it.isWarranty ? (
-                    <span className="pill">Гарантия</span>
+                    <span className="pill">{t('mo_warranty_pill')}</span>
                   ) : (
                     total > 0 && (
                       <button
@@ -1178,13 +1187,13 @@ export default function MyOrders() {
                         style={{ border: 'none', cursor: 'pointer' }}
                         onClick={() => togglePaymentStatus(it.id)}
                       >
-                        {total.toLocaleString('ru-RU')} ₽ · {PAYMENT_LABELS[it.paymentStatus] || PAYMENT_LABELS.unpaid}
+                        {total.toLocaleString('ru-RU')} ₽ · {paymentLabel(it.paymentStatus)}
                       </button>
                     )
                   )}
                 </div>
               </div>
-              <button className="btn btn-sm" onClick={() => removeItem(it.id)}>Удалить</button>
+              <button className="btn btn-sm" onClick={() => removeItem(it.id)}>{t('mo_delete')}</button>
             </div>
 
             {isOpen && (
@@ -1194,9 +1203,10 @@ export default function MyOrders() {
                   prices={it.prices}
                   onToggle={(opId) => toggleChecklistItem(it.id, opId)}
                   onPriceChange={(opId, value) => setOpPrice(it.id, opId, value)}
+                  tr={tr}
                 />
                 <div className="row" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontWeight: 700 }}>
-                  <span>Итого</span>
+                  <span>{t('mo_total_label')}</span>
                   <span>{total.toLocaleString('ru-RU')} ₽</span>
                 </div>
 
@@ -1207,33 +1217,33 @@ export default function MyOrders() {
                     onChange={() => toggleUnfinished(it.id)}
                     style={{ width: 18, height: 18, accentColor: 'var(--accent)', flexShrink: 0 }}
                   />
-                  <span style={{ fontSize: 13 }}>Работа не закончена — нужно доделать в следующий визит</span>
+                  <span style={{ fontSize: 13 }}>{t('mo_unfinished_checkbox')}</span>
                 </label>
                 {it.unfinished && (
                   <div style={{ marginTop: 8 }}>
                     <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-                      Остановился на
+                      {t('mo_label_stopped_at')}
                     </label>
                     <select
                       value={it.stoppedOpId || ''}
                       onChange={(e) => setStoppedOp(it.id, e.target.value)}
                       style={{ marginBottom: 8 }}
                     >
-                      <option value="">Не выбрано</option>
+                      <option value="">{t('mo_not_selected')}</option>
                       {orderOperations.map((op) => (
-                        <option key={op.id} value={op.id}>{op.title}</option>
+                        <option key={op.id} value={op.id}>{tr(op.title)}</option>
                       ))}
                     </select>
                     <input
                       type="text"
-                      placeholder="Детали, например: доклеил 3 узла, осталось подтянуть верхний регистр"
+                      placeholder={t('mo_ph_stopped_details')}
                       value={it.stoppedNote || ''}
                       onChange={(e) => setStoppedNote(it.id, e.target.value)}
                     />
                   </div>
                 )}
                 <div className="row" style={{ marginTop: 8, alignItems: 'center' }}>
-                  <label style={{ fontSize: 13, color: 'var(--text-dim)' }}>Расходы на материалы, ₽</label>
+                  <label style={{ fontSize: 13, color: 'var(--text-dim)' }}>{t('mo_label_expenses')}</label>
                   <input
                     type="number"
                     inputMode="numeric"
@@ -1245,18 +1255,18 @@ export default function MyOrders() {
                 </div>
                 {orderExpenses(it) > 0 && !it.isWarranty && (
                   <div className="row" style={{ marginTop: 4, fontSize: 13, color: 'var(--text-dim)' }}>
-                    <span>Прибыль</span>
+                    <span>{t('mo_profit_label')}</span>
                     <span>{orderProfit(it).toLocaleString('ru-RU')} ₽</span>
                   </div>
                 )}
                 {inventory.length > 0 && (
                   <div style={{ marginTop: 10 }}>
                     <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-                      Списать со склада
+                      {t('mo_label_consume_stock')}
                     </label>
                     <div className="row" style={{ gap: 8 }}>
                       <select value={invPick} onChange={(e) => setInvPick(e.target.value)} style={{ flex: 1 }}>
-                        <option value="">Выберите материал…</option>
+                        <option value="">{t('mo_select_material')}</option>
                         {inventory.map((i) => (
                           <option key={i.id} value={i.id}>{i.name} ({i.qty} {i.unit})</option>
                         ))}
@@ -1269,7 +1279,7 @@ export default function MyOrders() {
                         style={{ width: 60, textAlign: 'center' }}
                       />
                       <button className="btn btn-sm" onClick={() => consumeInventory(it.id)} disabled={!invPick}>
-                        Списать
+                        {t('mo_consume_btn')}
                       </button>
                     </div>
                   </div>
@@ -1277,7 +1287,7 @@ export default function MyOrders() {
                 {it.time && (
                   <div className="row" style={{ marginTop: 8, alignItems: 'center' }}>
                     <label style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-                      Фактическое окончание (план: {it.endTime || '—'})
+                      {t('mo_actual_end', { plan: it.endTime || '—' })}
                     </label>
                     <input
                       type="time"
@@ -1294,14 +1304,14 @@ export default function MyOrders() {
                   if (diff === 0) return null
                   return (
                     <div style={{ fontSize: 12, color: diff > 0 ? 'var(--danger)' : 'var(--text-dim)', marginTop: 2 }}>
-                      {diff > 0 ? `⏱ Задержка на ${diff} мин` : `⏱ Закончили на ${Math.abs(diff)} мин раньше`}
+                      {diff > 0 ? t('mo_delay', { n: diff }) : t('mo_early', { n: Math.abs(diff) })}
                     </div>
                   )
                 })()}
                 {!it.isWarranty && total > 0 && (
                   <div style={{ marginTop: 10 }}>
                     <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 6 }}>
-                      Способ оплаты
+                      {t('mo_payment_method_label')}
                     </label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       {PAYMENT_METHODS.map((m) => (
@@ -1311,7 +1321,7 @@ export default function MyOrders() {
                           style={{ flex: 1 }}
                           onClick={() => setPaymentMethod(it.id, m)}
                         >
-                          {PAYMENT_METHOD_LABELS[m]}
+                          {paymentMethodLabel(m)}
                         </button>
                       ))}
                     </div>

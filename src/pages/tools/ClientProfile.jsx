@@ -5,6 +5,7 @@ import { clientKey } from '../../utils/clientKey.js'
 import { orderTotal, orderExpenses, orderProfit } from '../../utils/orderTotal.js'
 import { getRemainingChecklist } from '../../utils/remainingWork.js'
 import orderOperations from '../../data/orderOperations.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const CONTINUE_DRAFT_KEY = 'pt_continue_draft_v1'
 
@@ -13,6 +14,7 @@ const PAYMENT_LABELS = { paid: 'Оплачено', partial: 'Частично', 
 export default function ClientProfile() {
   const { key } = useParams()
   const navigate = useNavigate()
+  const { tr } = useLanguage()
   const [items] = useLocalStorage('pt_my_orders_v1', [])
   const [blacklist, setBlacklist] = useLocalStorage('pt_blacklist_v1', [])
   const decodedKey = decodeURIComponent(key)
@@ -49,7 +51,7 @@ export default function ClientProfile() {
   // visits отсортированы по дате по убыванию — первый незаконченный и есть актуальный.
   const unfinishedVisit = visits.find((it) => it.unfinished)
   const stoppedOpTitle = unfinishedVisit
-    ? orderOperations.find((op) => op.id === unfinishedVisit.stoppedOpId)?.title
+    ? tr(orderOperations.find((op) => op.id === unfinishedVisit.stoppedOpId)?.title)
     : null
 
   const removeFromBlacklist = () => {
@@ -166,7 +168,7 @@ export default function ClientProfile() {
 
       <div className="section-label">История визитов</div>
       {visits.map((it) => {
-        const opsText = orderOperations.filter((op) => it.checklist?.[op.id]).map((op) => op.title).join(', ')
+        const opsText = orderOperations.filter((op) => it.checklist?.[op.id]).map((op) => tr(op.title)).join(', ')
         const total = orderTotal(it)
         return (
           <div key={it.id} className="card">
@@ -186,7 +188,7 @@ export default function ClientProfile() {
             {opsText && <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>{opsText}</div>}
             {it.unfinished && (
               <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-                Остановился на: {orderOperations.find((op) => op.id === it.stoppedOpId)?.title || '—'}
+                Остановился на: {tr(orderOperations.find((op) => op.id === it.stoppedOpId)?.title) || '—'}
                 {it.stoppedNote ? ` — ${it.stoppedNote}` : ''}
               </div>
             )}
