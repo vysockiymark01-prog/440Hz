@@ -4,6 +4,7 @@ import { useBeatEngine } from '../../hooks/useBeatEngine.js'
 import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import BeatVisualizer from '../../components/BeatVisualizer.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const BASE = 440
 
@@ -34,6 +35,7 @@ export default function MergeUnison() {
   const [mode, setMode] = useState('idle')
   const knobRef = useRef(knob)
   knobRef.current = knob
+  const { t } = useLanguage()
 
   const currentOffset = hiddenTarget + knob
 
@@ -82,32 +84,30 @@ export default function MergeUnison() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/trainer')}>‹ Тренажёр</button>
-      <h1 className="screen-title">Сведи унисон</h1>
+      <button className="back-link" onClick={() => navigate('/trainer')}>‹ {t('back_trainer')}</button>
+      <h1 className="screen-title">{t('mu_title')}</h1>
       <p className="screen-subtitle">
-        Вторая струна случайно расстроена. Крутите «ключ» и по поведению биений сведите унисон в ноль —
-        направление смещения не подсказывается.
+        {t('mu_subtitle')}
       </p>
       <div style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
-        точность сейчас: ±{successTolerance.toFixed(2)} Гц · серия верных: {progress.streak || 0}
+        {t('mu_precision_now', { tolerance: successTolerance.toFixed(2), streak: progress.streak || 0 })}
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Эталон: с чем сравнивать на слух</h3>
+        <h3 style={{ marginTop: 0 }}>{t('mu_reference_title')}</h3>
         <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 10 }}>
-          Перед тем как крутить ключ, послушайте, как звучит точный унисон (0 биений) и лёгкая расстройка
-          (1 биение в секунду) — так проще узнавать это на слух в основном упражнении.
+          {t('mu_reference_desc')}
         </p>
         <div className="row" style={{ gap: 8 }}>
           {mode === 'demo-zero' && isPlaying ? (
-            <button className="btn" style={{ flex: 1 }} onClick={stopAll}>⏸ Остановить</button>
+            <button className="btn" style={{ flex: 1 }} onClick={stopAll}>{t('mu_stop')}</button>
           ) : (
-            <button className="btn" style={{ flex: 1 }} onClick={playDemoZero}>🎧 0 биений</button>
+            <button className="btn" style={{ flex: 1 }} onClick={playDemoZero}>{t('mu_demo_zero')}</button>
           )}
           {mode === 'demo-one' && isPlaying ? (
-            <button className="btn" style={{ flex: 1 }} onClick={stopAll}>⏸ Остановить</button>
+            <button className="btn" style={{ flex: 1 }} onClick={stopAll}>{t('mu_stop')}</button>
           ) : (
-            <button className="btn" style={{ flex: 1 }} onClick={playDemoOne}>🎧 1 биение/сек</button>
+            <button className="btn" style={{ flex: 1 }} onClick={playDemoOne}>{t('mu_demo_one')}</button>
           )}
         </div>
       </div>
@@ -125,29 +125,29 @@ export default function MergeUnison() {
           onChange={(e) => setKnob(parseFloat(e.target.value))}
         />
         <div className="row" style={{ color: 'var(--text-faint)', fontSize: 12 }}>
-          <span>← ключ</span>
-          <span>ключ →</span>
+          <span>{t('mu_key_left')}</span>
+          <span>{t('mu_key_right')}</span>
         </div>
       </div>
 
       {mode === 'exercise' && isPlaying ? (
-        <button className="btn btn-block" onClick={stopAll}>⏸ Остановить</button>
+        <button className="btn btn-block" onClick={stopAll}>{t('mu_stop')}</button>
       ) : (
-        <button className="btn btn-block btn-primary" onClick={play}>▶ Играть унисон</button>
+        <button className="btn btn-block btn-primary" onClick={play}>{t('mu_play_unison')}</button>
       )}
 
       <button className="btn btn-block btn-primary" style={{ marginTop: 10 }} onClick={check}>
-        Проверить унисон
+        {t('mu_check_unison')}
       </button>
 
       {revealed && (
         <>
           <div className={`result-flash ${revealed.success ? 'good' : 'bad'}`}>
             {revealed.success
-              ? 'Унисон сведён чисто!'
-              : `Осталось смещение ≈ ${revealed.error.toFixed(2)} Гц`}
+              ? t('mu_success')
+              : t('mu_remaining_offset', { error: revealed.error.toFixed(2) })}
           </div>
-          <button className="btn btn-block" onClick={newRound}>Новая попытка →</button>
+          <button className="btn btn-block" onClick={newRound}>{t('mu_new_attempt')}</button>
         </>
       )}
     </div>

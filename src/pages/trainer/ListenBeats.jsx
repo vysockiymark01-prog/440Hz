@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
 import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 import BeatVisualizer from '../../components/BeatVisualizer.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const BASE = 440
 
@@ -11,6 +12,7 @@ export default function ListenBeats() {
   const [diff, setDiff] = useState(2)
   const { start, stop, setFreqB, getAnalyser, isPlaying } = useBeatEngine()
   const { recordActivity } = useTrainerStreak()
+  const { t } = useLanguage()
 
   useEffect(() => {
     if (isPlaying) setFreqB(BASE + diff)
@@ -29,16 +31,16 @@ export default function ListenBeats() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/trainer')}>‹ Тренажёр</button>
-      <h1 className="screen-title">Послушать биения</h1>
+      <button className="back-link" onClick={() => navigate('/trainer')}>‹ {t('back_trainer')}</button>
+      <h1 className="screen-title">{t('lb_title')}</h1>
       <p className="screen-subtitle">
-        Базовая пара 440 Гц + смещение. Двигайте слайдер и слушайте, как меняется скорость «вау-вау».
+        {t('lb_subtitle')}
       </p>
 
       <div className="card" style={{ textAlign: 'center' }}>
         <div className="big-number">{diff.toFixed(1)} Гц</div>
         <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-          ≈ {diff.toFixed(1)} биения в секунду
+          {t('lb_beats_per_sec', { n: diff.toFixed(1) })}
         </div>
       </div>
 
@@ -52,19 +54,19 @@ export default function ListenBeats() {
         onChange={(e) => setDiff(parseFloat(e.target.value))}
       />
       <div className="row" style={{ color: 'var(--text-faint)', fontSize: 12, marginTop: -6, marginBottom: 12 }}>
-        <span>0 Гц (ноль)</span>
-        <span>8 Гц</span>
+        <span>{t('lb_hz_zero')}</span>
+        <span>{t('lb_hz_eight')}</span>
       </div>
 
       <div className="row" style={{ gap: 8, marginBottom: 16 }}>
-        <button className="btn" style={{ flex: 1 }} onClick={() => setDiff(0)}>0 биений/сек</button>
-        <button className="btn" style={{ flex: 1 }} onClick={() => setDiff(1)}>1 биение/сек</button>
+        <button className="btn" style={{ flex: 1 }} onClick={() => setDiff(0)}>{t('lb_zero_beats')}</button>
+        <button className="btn" style={{ flex: 1 }} onClick={() => setDiff(1)}>{t('lb_one_beat')}</button>
       </div>
 
       <BeatVisualizer getAnalyser={getAnalyser} isPlaying={isPlaying} />
 
       <button className={`btn btn-block btn-primary`} style={{ marginTop: 16 }} onClick={toggle}>
-        {isPlaying ? '⏸ Остановить' : '▶ Играть 440 Гц + смещение'}
+        {isPlaying ? t('lb_stop') : t('lb_play')}
       </button>
     </div>
   )

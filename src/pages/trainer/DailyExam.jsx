@@ -5,16 +5,17 @@ import { useDefectEngine } from '../../hooks/useDefectEngine.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 import { DEFECT_TYPES } from '../../audio/DefectEngine.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const BASE = 440
 const ROUNDS = 5
 const COUNT_TOLERANCE = 0.3
 
-const DEFECT_LABELS = {
-  clean: 'Чистый звук',
-  buzz: 'Дребезжание',
-  harsh: 'Жёсткий тембр (лишние обертона)',
-  inharmonic: 'Негармоничность (биения внутри ноты)',
+const DEFECT_LABEL_KEYS = {
+  clean: 'ed_label_clean',
+  buzz: 'ed_label_buzz',
+  harsh: 'ed_label_harsh',
+  inharmonic: 'ed_label_inharmonic',
 }
 
 function todayStr() {
@@ -39,6 +40,7 @@ export default function DailyExam() {
   const defect = useDefectEngine()
   const { recordActivity } = useTrainerStreak()
   const [history, setHistory] = useLocalStorage('pt_daily_exam_v1', { history: [] })
+  const { t } = useLanguage()
 
   const [roundIndex, setRoundIndex] = useState(0)
   const [rounds] = useState(() => Array.from({ length: ROUNDS }, randomRound))
@@ -68,7 +70,7 @@ export default function DailyExam() {
     const error = Math.abs(guess - round.diff)
     const good = error <= COUNT_TOLERANCE
     if (good) setCorrectCount((c) => c + 1)
-    setRevealed({ good, text: `Правильный ответ: ${round.diff.toFixed(1)} Гц` })
+    setRevealed({ good, text: t('de_correct_answer', { n: round.diff.toFixed(1) }) })
   }
 
   const chooseDefect = (type) => {
@@ -77,7 +79,7 @@ export default function DailyExam() {
     defect.stop()
     const good = type === round.defectType
     if (good) setCorrectCount((c) => c + 1)
-    setRevealed({ good, text: `Это был: ${DEFECT_LABELS[round.defectType]}` })
+    setRevealed({ good, text: t('de_it_was', { label: t(DEFECT_LABEL_KEYS[round.defectType]) }) })
   }
 
   const nextRound = () => {
@@ -104,49 +106,49 @@ export default function DailyExam() {
     const pct = Math.round((correctCount / ROUNDS) * 100)
     return (
       <div>
-        <button className="back-link" onClick={() => navigate('/trainer')}>‹ Тренажёр</button>
-        <h1 className="screen-title">Экзамен дня — результат</h1>
+        <button className="back-link" onClick={() => navigate('/trainer')}>‹ {t('back_trainer')}</button>
+        <h1 className="screen-title">{t('de_result_title')}</h1>
         <div className="card" style={{ textAlign: 'center' }}>
           <div className="big-number">{correctCount}/{ROUNDS}</div>
-          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% правильных ответов</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% {t('de_correct_pct')}</div>
         </div>
-        <button className="btn btn-block btn-primary" onClick={() => navigate('/trainer')}>К тренажёру</button>
+        <button className="btn btn-block btn-primary" onClick={() => navigate('/trainer')}>{t('de_to_trainer')}</button>
       </div>
     )
   }
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/trainer')}>‹ Тренажёр</button>
-      <h1 className="screen-title">Экзамен дня</h1>
-      <p className="screen-subtitle">Задание {roundIndex + 1} из {ROUNDS} — вперемешку счёт биений и диагностика на слух</p>
+      <button className="back-link" onClick={() => navigate('/trainer')}>‹ {t('back_trainer')}</button>
+      <h1 className="screen-title">{t('de_title')}</h1>
+      <p className="screen-subtitle">{t('de_task_progress', { n: roundIndex + 1, total: ROUNDS })}</p>
 
       {round.kind === 'count' ? (
         <>
           <div className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 700 }}>Сколько биений в секунду?</div>
+            <div style={{ fontWeight: 700 }}>{t('de_how_many_beats')}</div>
           </div>
-          <button className="btn btn-block" style={{ marginTop: 12 }} onClick={playRound}>▶ Проиграть пару</button>
+          <button className="btn btn-block" style={{ marginTop: 12 }} onClick={playRound}>{t('de_play_pair')}</button>
           <div style={{ margin: '16px 0' }}>
             <input
               type="text"
               inputMode="decimal"
-              placeholder="Ваш ответ, Гц (например 2.5)"
+              placeholder={t('de_answer_placeholder')}
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               disabled={revealed !== null}
             />
           </div>
           {revealed === null && (
-            <button className="btn btn-block btn-primary" onClick={submitCount} disabled={!answer}>Проверить</button>
+            <button className="btn btn-block btn-primary" onClick={submitCount} disabled={!answer}>{t('de_check')}</button>
           )}
         </>
       ) : (
         <>
           <div className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 700 }}>Что за дефект звука?</div>
+            <div style={{ fontWeight: 700 }}>{t('de_what_defect')}</div>
           </div>
-          <button className="btn btn-block" style={{ marginTop: 12 }} onClick={playRound}>▶ Проиграть звук</button>
+          <button className="btn btn-block" style={{ marginTop: 12 }} onClick={playRound}>{t('de_play_sound')}</button>
           <div style={{ marginTop: 16 }}>
             {DEFECT_TYPES.map((type) => {
               let cls = 'theme-option'
@@ -156,7 +158,7 @@ export default function DailyExam() {
               }
               return (
                 <button key={type} className={cls} style={{ marginBottom: 8 }} onClick={() => chooseDefect(type)}>
-                  <span>{DEFECT_LABELS[type]}</span>
+                  <span>{t(DEFECT_LABEL_KEYS[type])}</span>
                 </button>
               )
             })}
@@ -167,10 +169,10 @@ export default function DailyExam() {
       {revealed && (
         <>
           <div className={`result-flash ${revealed.good ? 'good' : 'bad'}`}>
-            {revealed.good ? 'Точно!' : 'Мимо'} {revealed.text}
+            {revealed.good ? t('de_correct') : t('de_wrong')} {revealed.text}
           </div>
           <button className="btn btn-block btn-primary" style={{ marginTop: 10 }} onClick={nextRound}>
-            {roundIndex + 1 >= ROUNDS ? 'Завершить экзамен' : 'Следующее задание →'}
+            {roundIndex + 1 >= ROUNDS ? t('de_finish_exam') : t('de_next_task')}
           </button>
         </>
       )}

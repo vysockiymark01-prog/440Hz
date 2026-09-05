@@ -4,12 +4,13 @@ import { useDefectEngine } from '../../hooks/useDefectEngine.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
 import { DEFECT_TYPES } from '../../audio/DefectEngine.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-const LABELS = {
-  clean: 'Чистый звук',
-  buzz: 'Дребезжание',
-  harsh: 'Жёсткий тембр (лишние обертона)',
-  inharmonic: 'Негармоничность (биения внутри ноты)',
+const LABEL_KEYS = {
+  clean: 'ed_label_clean',
+  buzz: 'ed_label_buzz',
+  harsh: 'ed_label_harsh',
+  inharmonic: 'ed_label_inharmonic',
 }
 
 function randomType() {
@@ -27,6 +28,7 @@ export default function EarDiagnostics() {
   const [selected, setSelected] = useState(null)
   const [stats, setStats] = useLocalStorage('pt_ear_diag_stats_v1', { attempts: 0, correct: 0 })
   const { recordActivity } = useTrainerStreak()
+  const { t } = useLanguage()
 
   useEffect(() => () => stop(), [stop])
 
@@ -52,19 +54,18 @@ export default function EarDiagnostics() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/trainer')}>‹ Тренажёр</button>
-      <h1 className="screen-title">Диагностика на слух</h1>
+      <button className="back-link" onClick={() => navigate('/trainer')}>‹ {t('back_trainer')}</button>
+      <h1 className="screen-title">{t('ed_title')}</h1>
       <p className="screen-subtitle">
-        Синтетическая имитация типичных дефектов звука — дребезжания, лишних обертонов и негармоничности.
-        Это не запись реального инструмента, а смоделированный звук для тренировки узнавания.
+        {t('ed_subtitle')}
       </p>
 
       <div className="stat-grid">
-        <div className="stat-box"><div className="v">{stats.attempts}</div><div className="l">попыток</div></div>
-        <div className="stat-box"><div className="v">{accuracy}%</div><div className="l">точность</div></div>
+        <div className="stat-box"><div className="v">{stats.attempts}</div><div className="l">{t('ed_attempts')}</div></div>
+        <div className="stat-box"><div className="v">{accuracy}%</div><div className="l">{t('ed_accuracy')}</div></div>
       </div>
 
-      <button className="btn btn-block" onClick={playCurrent}>▶ Проиграть звук</button>
+      <button className="btn btn-block" onClick={playCurrent}>{t('ed_play_sound')}</button>
 
       <div style={{ marginTop: 16 }}>
         {DEFECT_TYPES.map((type) => {
@@ -75,7 +76,7 @@ export default function EarDiagnostics() {
           }
           return (
             <button key={type} className={cls} style={{ marginBottom: 8 }} onClick={() => choose(type)}>
-              <span>{LABELS[type]}</span>
+              <span>{t(LABEL_KEYS[type])}</span>
               {selected !== null && type === current.type && <span className="check" style={{ visibility: 'visible' }}>✓</span>}
               {selected !== null && type === selected && type !== current.type && <span className="check" style={{ visibility: 'visible', color: 'var(--danger)' }}>✕</span>}
             </button>
@@ -84,7 +85,7 @@ export default function EarDiagnostics() {
       </div>
 
       {selected !== null && (
-        <button className="btn btn-block btn-primary" onClick={next}>Следующий звук →</button>
+        <button className="btn btn-block btn-primary" onClick={next}>{t('ed_next_sound')}</button>
       )}
     </div>
   )

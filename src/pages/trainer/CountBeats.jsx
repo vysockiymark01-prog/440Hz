@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useBeatEngine } from '../../hooks/useBeatEngine.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useTrainerStreak } from '../../hooks/useTrainerStreak.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const BASE = 440
 const TOLERANCE = 0.3
@@ -19,10 +20,10 @@ function randomDiff(streak = 0) {
   return Math.round((1.2 + Math.random() * 1.8) * 10) / 10 // комфортная середина
 }
 
-function difficultyLabel(streak) {
-  if (streak >= 6) return 'сложно'
-  if (streak >= 3) return 'средне'
-  return 'легко'
+function difficultyKey(streak) {
+  if (streak >= 6) return 'cb_diff_hard'
+  if (streak >= 3) return 'cb_diff_medium'
+  return 'cb_diff_easy'
 }
 
 export default function CountBeats() {
@@ -34,6 +35,7 @@ export default function CountBeats() {
   const [result, setResult] = useState(null)
   const { recordActivity } = useTrainerStreak()
   const revealedRef = useRef(false)
+  const { t } = useLanguage()
 
   useEffect(() => () => stop(), [stop])
 
@@ -70,46 +72,46 @@ export default function CountBeats() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/trainer')}>‹ Тренажёр</button>
-      <h1 className="screen-title">Посчитай биения</h1>
-      <p className="screen-subtitle">Сыграйте пару и определите на слух скорость биений в секунду (0.5–5 Гц)</p>
+      <button className="back-link" onClick={() => navigate('/trainer')}>‹ {t('back_trainer')}</button>
+      <h1 className="screen-title">{t('cb_title')}</h1>
+      <p className="screen-subtitle">{t('cb_subtitle')}</p>
 
       <div className="stat-grid">
-        <div className="stat-box"><div className="v">{stats.attempts}</div><div className="l">попыток</div></div>
-        <div className="stat-box"><div className="v">{accuracy}%</div><div className="l">точность</div></div>
-        <div className="stat-box"><div className="v">{avgError}</div><div className="l">ср. ошибка, Гц</div></div>
+        <div className="stat-box"><div className="v">{stats.attempts}</div><div className="l">{t('cb_attempts')}</div></div>
+        <div className="stat-box"><div className="v">{accuracy}%</div><div className="l">{t('cb_accuracy')}</div></div>
+        <div className="stat-box"><div className="v">{avgError}</div><div className="l">{t('cb_avg_error')}</div></div>
       </div>
       <div style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>
-        сложность сейчас: {difficultyLabel(stats.streak || 0)} · серия верных: {stats.streak || 0}
+        {t('cb_difficulty_now', { level: t(difficultyKey(stats.streak || 0)), streak: stats.streak || 0 })}
       </div>
 
       {isPlaying ? (
-        <button className="btn btn-block" onClick={stop}>⏸ Остановить</button>
+        <button className="btn btn-block" onClick={stop}>{t('cb_stop')}</button>
       ) : (
-        <button className="btn btn-block" onClick={play}>▶ Проиграть пару</button>
+        <button className="btn btn-block" onClick={play}>{t('cb_play_pair')}</button>
       )}
 
       <div style={{ margin: '16px 0' }}>
         <input
           type="text"
           inputMode="decimal"
-          placeholder="Ваш ответ, Гц (например 2.5)"
+          placeholder={t('cb_answer_placeholder')}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
         />
       </div>
 
       <button className="btn btn-block btn-primary" onClick={submit} disabled={!answer}>
-        Проверить
+        {t('cb_check')}
       </button>
 
       {result && (
         <>
           <div className={`result-flash ${result.good ? 'good' : 'bad'}`}>
-            {result.good ? 'Точно!' : 'Мимо'} Правильный ответ: {result.actual.toFixed(1)} Гц
-            {' '}(ваша ошибка {result.error.toFixed(1)} Гц)
+            {result.good ? t('cb_correct') : t('cb_wrong')}{' '}
+            {t('cb_answer_line', { actual: result.actual.toFixed(1), error: result.error.toFixed(1) })}
           </div>
-          <button className="btn btn-block" onClick={newRound}>Следующая пара →</button>
+          <button className="btn btn-block" onClick={newRound}>{t('cb_next_pair')}</button>
         </>
       )}
     </div>
