@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 function buildVCard(card) {
   const lines = ['BEGIN:VCARD', 'VERSION:3.0']
@@ -169,7 +170,7 @@ async function shareOrDownloadFile(file, blob, card, download, setStatus, okMess
   setStatus({ type: 'good', text: okMessage })
 }
 
-async function shareCardImage(card, qrUrl, setStatus) {
+async function shareCardImage(card, qrUrl, setStatus, t) {
   setStatus(null)
   try {
     const blob = await buildCardImage(card, qrUrl)
@@ -177,14 +178,14 @@ async function shareCardImage(card, qrUrl, setStatus) {
     const file = new File([blob], `${card.name || 'vizitka'}.png`, { type: 'image/png' })
     await shareOrDownloadFile(
       file, blob, card, downloadImage, setStatus,
-      'Отправка через это приложение недоступна — картинка скачана, отправьте её вручную в соцсеть или мессенджер.'
+      t('bc_status_image_fallback')
     )
   } catch {
-    setStatus({ type: 'bad', text: 'Не удалось собрать картинку визитки. Попробуйте ещё раз или используйте QR-код ниже.' })
+    setStatus({ type: 'bad', text: t('bc_status_image_fail') })
   }
 }
 
-async function shareCardText(card, setStatus) {
+async function shareCardText(card, setStatus, t) {
   setStatus(null)
   const summary = buildSummary(card)
 
@@ -200,19 +201,19 @@ async function shareCardText(card, setStatus) {
   if (navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(summary)
-      setStatus({ type: 'good', text: 'Отправка через это приложение недоступна — текст визитки скопирован в буфер обмена, вставьте его в пост или сообщение.' })
+      setStatus({ type: 'good', text: t('bc_status_text_fallback_copied') })
       return
     } catch {
       /* переходим к сообщению об ошибке ниже */
     }
   }
-  setStatus({ type: 'bad', text: 'Отправка недоступна в этом браузере. Скопируйте текст визитки вручную.' })
+  setStatus({ type: 'bad', text: t('bc_status_text_fail') })
 }
 
 // Пробует поделиться файлом .vcf, затем текстом, и только если оба способа
 // недоступны или дали сбой (а не просто отмену пользователем) — копирует
 // сводку в буфер обмена, чтобы кнопка никогда не оставалась «немой».
-async function shareVCard(card, setStatus) {
+async function shareVCard(card, setStatus, t) {
   setStatus(null)
   const vcf = buildVCard(card)
   const summary = buildSummary(card)
@@ -241,17 +242,18 @@ async function shareVCard(card, setStatus) {
   if (navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(summary)
-      setStatus({ type: 'good', text: 'Отправка через это приложение недоступна — визитка скопирована в буфер обмена. Или покажите клиенту QR-код ниже.' })
+      setStatus({ type: 'good', text: t('bc_status_vcard_fallback_copied') })
       return
     } catch {
       /* переходим к сообщению об ошибке ниже */
     }
   }
-  setStatus({ type: 'bad', text: 'Отправка недоступна в этом браузере. Покажите клиенту QR-код ниже или скачайте файл .vcf.' })
+  setStatus({ type: 'bad', text: t('bc_status_vcard_fail') })
 }
 
 export default function BusinessCard() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [card, setCard] = useLocalStorage('pt_business_card_v1', {
     name: '', phone: '', email: '', city: '', note: '',
   })
@@ -312,36 +314,33 @@ export default function BusinessCard() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
-      <h1 className="screen-title">Визитка мастера</h1>
-      <p className="screen-subtitle">
-        Заполните свои контакты один раз — потом можно отправить визитку клиенту, выложить картинкой
-        в соцсети или показать QR-код, который камера телефона распознает как контакт.
-      </p>
+      <button className="back-link" onClick={() => navigate('/more')}>‹ {t('back_more')}</button>
+      <h1 className="screen-title">{t('bc_title')}</h1>
+      <p className="screen-subtitle">{t('bc_subtitle')}</p>
 
       <div className="card">
-        {field('name', 'Имя и фамилия', 'text', 'например, Иван Петров')}
-        {field('phone', 'Телефон', 'tel', 'например, +7 900 123-45-67')}
-        {field('email', 'Email', 'email', 'например, tuner@example.com')}
-        {field('city', 'Город', 'text', 'например, Москва')}
-        {field('note', 'Кратко о себе', 'text', 'например, настройка и ремонт пианино, 10 лет опыта')}
+        {field('name', t('bc_label_name'), 'text', t('bc_ph_name'))}
+        {field('phone', t('bc_label_phone'), 'tel', t('bc_ph_phone'))}
+        {field('email', t('bc_label_email'), 'email', t('bc_ph_email'))}
+        {field('city', t('bc_label_city'), 'text', t('bc_ph_city'))}
+        {field('note', t('bc_label_note'), 'text', t('bc_ph_note'))}
       </div>
 
       {hasData && (
         <>
           {imagePreview && (
             <div className="card" style={{ textAlign: 'center', marginTop: 12, padding: 8 }}>
-              <img src={imagePreview} alt="Превью визитки для соцсетей" style={{ width: '100%', borderRadius: 10, display: 'block' }} />
+              <img src={imagePreview} alt={t('bc_preview_alt')} style={{ width: '100%', borderRadius: 10, display: 'block' }} />
             </div>
           )}
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            <button className="btn btn-block btn-primary" onClick={() => shareCardImage(card, qrUrl, setStatus)}>🖼️ Поделиться картинкой</button>
-            <button className="btn btn-block" onClick={() => shareCardText(card, setStatus)}>📝 Поделиться текстом</button>
+            <button className="btn btn-block btn-primary" onClick={() => shareCardImage(card, qrUrl, setStatus, t)}>{t('bc_share_image')}</button>
+            <button className="btn btn-block" onClick={() => shareCardText(card, setStatus, t)}>{t('bc_share_text')}</button>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button className="btn" onClick={() => shareVCard(card, setStatus)}>📇 Контакт</button>
-            <button className="btn" onClick={() => downloadVCard(card)}>⬇️ .vcf</button>
+            <button className="btn" onClick={() => shareVCard(card, setStatus, t)}>{t('bc_share_contact')}</button>
+            <button className="btn" onClick={() => downloadVCard(card)}>{t('bc_share_vcf')}</button>
           </div>
 
           {status && (
@@ -352,11 +351,10 @@ export default function BusinessCard() {
 
           {qrUrl && (
             <div className="card" style={{ textAlign: 'center', marginTop: 16 }}>
-              <div style={{ fontWeight: 700, marginBottom: 10 }}>QR-код визитки</div>
-              <img src={qrUrl} alt="QR-код визитки" style={{ width: 200, height: 200, borderRadius: 8 }} />
+              <div style={{ fontWeight: 700, marginBottom: 10 }}>{t('bc_qr_title')}</div>
+              <img src={qrUrl} alt={t('bc_qr_alt')} style={{ width: 200, height: 200, borderRadius: 8 }} />
               <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 10 }}>
-                Дайте клиенту навести камеру телефона — большинство камера сами предложат добавить контакт.
-                Работает даже без интернета и без «Поделиться».
+                {t('bc_qr_hint')}
               </div>
             </div>
           )}

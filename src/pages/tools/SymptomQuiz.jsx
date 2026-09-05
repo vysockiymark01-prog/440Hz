@@ -11,7 +11,7 @@ export default function SymptomQuiz() {
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const [best, setBest] = useLocalStorage('pt_symptom_quiz_best_v1', null)
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   const question = symptomQuiz[index]
   const isLast = index === symptomQuiz.length - 1
@@ -70,7 +70,7 @@ export default function SymptomQuiz() {
       </p>
 
       <div className="card">
-        <div style={{ fontWeight: 700, marginBottom: 14 }}>{question.q}</div>
+        <div style={{ fontWeight: 700, marginBottom: 14 }}>{tr(question.q)}</div>
         {question.options.map((opt, i) => {
           let cls = 'theme-option'
           if (selected !== null) {
@@ -79,7 +79,7 @@ export default function SymptomQuiz() {
           }
           return (
             <button key={i} className={cls} style={{ marginBottom: 8 }} onClick={() => choose(i)}>
-              <span>{opt}</span>
+              <span>{tr(opt)}</span>
               {selected !== null && i === question.correctIndex && <span className="check" style={{ visibility: 'visible' }}>✓</span>}
               {selected !== null && i === selected && i !== question.correctIndex && <span className="check" style={{ visibility: 'visible', color: 'var(--danger)' }}>✕</span>}
             </button>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 function toLocalInputValue(iso) {
   if (!iso) return ''
@@ -21,6 +22,7 @@ const dateInputStyle = {
 
 export default function MyCourse() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const {
     status, setStatus, startNoviceSchedule, schedule, setLectureDate,
     testsPassed, passedCount, totalLectures, isCourseComplete,
@@ -46,25 +48,25 @@ export default function MyCourse() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
-      <h1 className="screen-title">Мой курс</h1>
-      <p className="screen-subtitle">Статус можно менять в любой момент — прогресс не теряется</p>
+      <button className="back-link" onClick={() => navigate('/more')}>‹ {t('back_more')}</button>
+      <h1 className="screen-title">{t('mc_title')}</h1>
+      <p className="screen-subtitle">{t('mc_subtitle')}</p>
 
       <div className="theme-options">
         <button className={`theme-option ${status === 'novice' ? 'active' : ''}`} onClick={switchToNovice}>
           <span>
-            <div style={{ fontWeight: 700 }}>🌱 Я новичок</div>
+            <div style={{ fontWeight: 700 }}>{t('mc_novice_title')}</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
-              Темы открываются постепенно — по тестам и расписанию
+              {t('mc_novice_desc')}
             </div>
           </span>
           <span className="check">✓</span>
         </button>
         <button className={`theme-option ${status === 'graduate' ? 'active' : ''}`} onClick={() => setStatus('graduate')}>
           <span>
-            <div style={{ fontWeight: 700 }}>🎓 Я уже проходил курс</div>
+            <div style={{ fontWeight: 700 }}>{t('mc_graduate_title')}</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
-              Весь справочник и тесты открыты сразу
+              {t('mc_graduate_desc')}
             </div>
           </span>
           <span className="check">✓</span>
@@ -73,9 +75,9 @@ export default function MyCourse() {
 
       {pickingDate && (
         <div className="card">
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Когда первая лекция?</div>
+          <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('mc_first_lecture_q')}</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 10 }}>
-            Остальные темы расставятся автоматически по будням, без выходных, в это же время.
+            {t('mc_first_lecture_desc')}
           </div>
           <input
             type="datetime-local"
@@ -84,22 +86,22 @@ export default function MyCourse() {
             style={{ ...dateInputStyle, width: '100%', padding: '10px 12px', fontSize: 14 }}
           />
           <button className="btn btn-primary btn-block" style={{ marginTop: 10 }} onClick={confirmFirstDate}>
-            Начать курс
+            {t('mc_start_btn')}
           </button>
         </div>
       )}
 
       {status === 'novice' && (
         <>
-          <div className="section-label">Прогресс</div>
+          <div className="section-label">{t('mc_progress_label')}</div>
           <div className="card" style={{ textAlign: 'center' }}>
             <div className="big-number">{passedCount}/{totalLectures}</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-              {isCourseComplete ? 'Курс пройден полностью 🎉' : 'тем пройдено'}
+              {isCourseComplete ? t('mc_complete') : t('mc_topics_passed')}
             </div>
           </div>
 
-          <div className="section-label">Расписание тем</div>
+          <div className="section-label">{t('mc_schedule_label')}</div>
           {lectures.map((l) => (
             <div key={l.id} className="card-tap row" style={{ alignItems: 'center', cursor: 'default' }}>
               <span className="row-start">
@@ -107,7 +109,7 @@ export default function MyCourse() {
                 <span>
                   <div style={{ fontWeight: 700 }}>{l.title}</div>
                   {testsPassed[l.id] && (
-                    <div style={{ color: 'var(--success)', fontSize: 12, marginTop: 2 }}>✓ тест сдан</div>
+                    <div style={{ color: 'var(--success)', fontSize: 12, marginTop: 2 }}>{t('mc_test_passed')}</div>
                   )}
                 </span>
               </span>

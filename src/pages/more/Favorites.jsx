@@ -2,9 +2,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import glossary from '../../data/glossary.js'
 import { useFavorites } from '../../hooks/useFavorites.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function Favorites() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const { favorites } = useFavorites()
 
   const favArticles = favorites.articles
@@ -23,18 +25,18 @@ export default function Favorites() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
-      <h1 className="screen-title">Избранное</h1>
+      <button className="back-link" onClick={() => navigate('/more')}>‹ {t('back_more')}</button>
+      <h1 className="screen-title">{t('fav_title')}</h1>
 
       {isEmpty && (
         <div className="empty-state">
-          Пока ничего не добавлено.<br />Нажмите ☆ на статье или термине глоссария.
+          {t('fav_empty_line1')}<br />{t('fav_empty_line2')}
         </div>
       )}
 
       {favArticles.length > 0 && (
         <>
-          <div className="section-label">Статьи</div>
+          <div className="section-label">{t('fav_articles_label')}</div>
           {favArticles.map(({ lecture, article }) => (
             <Link key={article.id} to={`/reference/${lecture.id}/${article.id}`} className="card-tap row">
               <span>
@@ -49,10 +51,10 @@ export default function Favorites() {
 
       {favTerms.length > 0 && (
         <>
-          <div className="section-label">Термины</div>
-          {favTerms.map((t) => (
-            <Link key={t.id} to={`/reference/glossary/${t.id}`} className="card-tap row">
-              <span style={{ fontWeight: 700 }}>{t.term}</span>
+          <div className="section-label">{t('fav_terms_label')}</div>
+          {favTerms.map((term) => (
+            <Link key={term.id} to={`/reference/glossary/${term.id}`} className="card-tap row">
+              <span style={{ fontWeight: 700 }}>{term.term}</span>
               <span>›</span>
             </Link>
           ))}

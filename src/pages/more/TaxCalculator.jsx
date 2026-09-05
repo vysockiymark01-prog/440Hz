@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { orderTotal } from '../../utils/orderTotal.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 function currentQuarter(date) {
   return Math.floor(date.getMonth() / 3) + 1
@@ -16,6 +17,7 @@ function quarterRange(year, quarter) {
 
 export default function TaxCalculator() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [items] = useLocalStorage('pt_my_orders_v1', [])
   const today = useMemo(() => new Date(), [])
   const [year, setYear] = useState(today.getFullYear())
@@ -45,19 +47,21 @@ export default function TaxCalculator() {
   const taxOrg = orgIncome * 0.06
   const totalTax = taxPerson + taxOrg
 
+  const orderWord = count === 1
+    ? t('tax_order_one')
+    : (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)
+      ? t('tax_order_few')
+      : t('tax_order_many'))
+
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/more')}>‹ Ещё</button>
-      <h1 className="screen-title">Налоги</h1>
-      <p className="screen-subtitle">
-        Оценка налога на профессиональный доход (НПД, «самозанятость») по данным из «Моих заказов»:
-        4% с расчётов от физлиц, 6% — от организаций. Это ориентировочный расчёт, а не официальная
-        консультация — точную сумму и сроки уплаты смотрите в приложении «Мой налог» или у бухгалтера.
-      </p>
+      <button className="back-link" onClick={() => navigate('/more')}>‹ {t('back_more')}</button>
+      <h1 className="screen-title">{t('tax_title')}</h1>
+      <p className="screen-subtitle">{t('tax_subtitle')}</p>
 
       <div className="row" style={{ gap: 10, marginBottom: 14 }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>Год</label>
+          <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>{t('tax_label_year')}</label>
           <input
             type="number"
             inputMode="numeric"
@@ -66,32 +70,32 @@ export default function TaxCalculator() {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>Квартал</label>
+          <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>{t('tax_label_quarter')}</label>
           <select value={quarter} onChange={(e) => setQuarter(Number(e.target.value))}>
-            <option value={1}>I (янв–мар)</option>
-            <option value={2}>II (апр–июн)</option>
-            <option value={3}>III (июл–сен)</option>
-            <option value={4}>IV (окт–дек)</option>
+            <option value={1}>{t('tax_q1')}</option>
+            <option value={2}>{t('tax_q2')}</option>
+            <option value={3}>{t('tax_q3')}</option>
+            <option value={4}>{t('tax_q4')}</option>
           </select>
         </div>
       </div>
 
       {count === 0 ? (
-        <div className="empty-state">За этот квартал нет оплаченных заказов с ценами.</div>
+        <div className="empty-state">{t('tax_empty')}</div>
       ) : (
         <>
           <div className="card" style={{ textAlign: 'center', marginBottom: 14 }}>
             <div className="big-number">{totalTax.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>
-              налог к уплате за {count} {count === 1 ? 'заказ' : 'заказов'}
+              {t('tax_due_for', { count, orders: orderWord })}
             </div>
           </div>
 
           <div className="card row" style={{ alignItems: 'center' }}>
             <div>
-              <div style={{ fontWeight: 700 }}>От физлиц (4%)</div>
+              <div style={{ fontWeight: 700 }}>{t('tax_from_person')}</div>
               <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-                доход {personIncome.toLocaleString('ru-RU')} ₽
+                {t('tax_income', { amount: personIncome.toLocaleString('ru-RU') })}
               </div>
             </div>
             <div style={{ fontWeight: 700 }}>{taxPerson.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</div>
@@ -99,16 +103,16 @@ export default function TaxCalculator() {
 
           <div className="card row" style={{ alignItems: 'center' }}>
             <div>
-              <div style={{ fontWeight: 700 }}>От организаций (6%)</div>
+              <div style={{ fontWeight: 700 }}>{t('tax_from_org')}</div>
               <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-                доход {orgIncome.toLocaleString('ru-RU')} ₽
+                {t('tax_income', { amount: orgIncome.toLocaleString('ru-RU') })}
               </div>
             </div>
             <div style={{ fontWeight: 700 }}>{taxOrg.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</div>
           </div>
 
           <div className="card row" style={{ alignItems: 'center' }}>
-            <div style={{ fontWeight: 700 }}>Итого доход за квартал</div>
+            <div style={{ fontWeight: 700 }}>{t('tax_total_income')}</div>
             <div style={{ fontWeight: 700 }}>{totalIncome.toLocaleString('ru-RU')} ₽</div>
           </div>
         </>

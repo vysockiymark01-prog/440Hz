@@ -5,10 +5,12 @@ import quizzes from '../../data/quizzes.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
 import { pickQuote, finalQuote } from '../../data/quotes.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function QuizRunner() {
   const { lectureId } = useParams()
   const navigate = useNavigate()
+  const { tr } = useLanguage()
   const lecture = lectures.find((l) => l.id === lectureId)
   const questions = useMemo(() => quizzes[lectureId] || [], [lectureId])
   const {
@@ -106,7 +108,7 @@ export default function QuizRunner() {
         <div className="card" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🏆</div>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>Все темы курса открыты и тесты пройдены</div>
-          <div style={{ fontStyle: 'italic', color: 'var(--text)', marginBottom: 6 }}>«{finalQuote.text}»</div>
+          <div style={{ fontStyle: 'italic', color: 'var(--text)', marginBottom: 6 }}>«{tr(finalQuote.text)}»</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>— {finalQuote.author}</div>
         </div>
         <button className="btn btn-block btn-primary" onClick={() => navigate('/reference')}>К справочнику</button>
@@ -126,7 +128,7 @@ export default function QuizRunner() {
         </div>
         {quote && (
           <div className="card" style={{ textAlign: 'center' }}>
-            <div style={{ fontStyle: 'italic', marginBottom: 6 }}>«{quote.text}»</div>
+            <div style={{ fontStyle: 'italic', marginBottom: 6 }}>«{tr(quote.text)}»</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>— {quote.author}</div>
           </div>
         )}

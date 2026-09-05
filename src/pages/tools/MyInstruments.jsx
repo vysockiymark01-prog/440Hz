@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 function monthsSince(dateStr) {
   if (!dateStr) return null
@@ -9,21 +10,9 @@ function monthsSince(dateStr) {
   return (now.getFullYear() - then.getFullYear()) * 12 + (now.getMonth() - then.getMonth())
 }
 
-function monthsLabel(n) {
-  if (n === null) return '—'
-  if (n <= 0) return 'в этом месяце'
-  const mod10 = n % 10
-  const mod100 = n % 100
-  let word = 'месяцев'
-  if (mod100 < 11 || mod100 > 14) {
-    if (mod10 === 1) word = 'месяц'
-    else if (mod10 >= 2 && mod10 <= 4) word = 'месяца'
-  }
-  return `${n} ${word} назад`
-}
-
 export default function MyInstruments() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [items, setItems] = useLocalStorage('pt_my_instruments_v1', [])
   const [brand, setBrand] = useState('')
   const [lastTuned, setLastTuned] = useState('')
@@ -31,6 +20,12 @@ export default function MyInstruments() {
   const [clientName, setClientName] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+
+  const monthsLabel = (n) => {
+    if (n === null) return '—'
+    if (n <= 0) return t('mi_this_month')
+    return t('mi_months_ago', { n })
+  }
 
   const addItem = () => {
     if (!brand.trim()) return
@@ -64,58 +59,55 @@ export default function MyInstruments() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Мои инструменты</h1>
-      <p className="screen-subtitle">
-        Личная база инструментов и клиентов — чтобы не забыть, кому пора звонить с напоминанием
-        и как с ним связаться. Хранится только на этом устройстве.
-      </p>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('mi_title')}</h1>
+      <p className="screen-subtitle">{t('mi_subtitle')}</p>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Добавить инструмент</h3>
+        <h3 style={{ marginTop: 0 }}>{t('mi_add_title')}</h3>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Марка / модель
+            {t('mi_label_brand')}
           </label>
-          <input type="text" placeholder="например, Petrof P118" value={brand} onChange={(e) => setBrand(e.target.value)} />
+          <input type="text" placeholder={t('mi_ph_brand')} value={brand} onChange={(e) => setBrand(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Дата последней настройки
+            {t('mi_label_last_tuned')}
           </label>
           <input type="date" value={lastTuned} onChange={(e) => setLastTuned(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Имя клиента
+            {t('mi_label_client_name')}
           </label>
-          <input type="text" placeholder="например, Ирина" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+          <input type="text" placeholder={t('mi_ph_client_name')} value={clientName} onChange={(e) => setClientName(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Телефон
+            {t('mi_label_phone')}
           </label>
-          <input type="tel" placeholder="например, +7 900 123-45-67" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input type="tel" placeholder={t('mi_ph_phone')} value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <div style={{ marginBottom: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Адрес
+            {t('mi_label_address')}
           </label>
-          <input type="text" placeholder="например, ул. Ленина, 10, кв. 5" value={address} onChange={(e) => setAddress(e.target.value)} />
+          <input type="text" placeholder={t('mi_ph_address')} value={address} onChange={(e) => setAddress(e.target.value)} />
         </div>
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>
-            Заметка
+            {t('mi_label_note')}
           </label>
-          <input type="text" placeholder="например, особенности инструмента" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input type="text" placeholder={t('mi_ph_note')} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
         <button className="btn btn-block btn-primary" onClick={addItem} disabled={!brand.trim()}>
-          Добавить
+          {t('mi_add_btn')}
         </button>
       </div>
 
       {sorted.length === 0 && (
-        <div className="empty-state">Список пуст — добавьте первый инструмент выше.</div>
+        <div className="empty-state">{t('mi_empty')}</div>
       )}
 
       {sorted.map((it) => {
@@ -130,8 +122,8 @@ export default function MyInstruments() {
                   <div style={{ color: 'var(--text)', fontSize: 13, marginTop: 2 }}>{it.clientName}</div>
                 )}
                 <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
-                  {it.lastTuned ? monthsLabel(months) : 'дата настройки не указана'}
-                  {overdue && <span className="pill badge-accent" style={{ marginLeft: 8 }}>пора настраивать</span>}
+                  {it.lastTuned ? monthsLabel(months) : t('mi_date_unset')}
+                  {overdue && <span className="pill badge-accent" style={{ marginLeft: 8 }}>{t('mi_overdue')}</span>}
                 </div>
                 {it.phone && (
                   <div style={{ marginTop: 4, fontSize: 13 }}>
@@ -143,7 +135,7 @@ export default function MyInstruments() {
                 )}
                 {it.note && <div style={{ color: 'var(--text-faint)', fontSize: 13, marginTop: 4 }}>{it.note}</div>}
               </div>
-              <button className="btn btn-sm" onClick={() => removeItem(it.id)}>Удалить</button>
+              <button className="btn btn-sm" onClick={() => removeItem(it.id)}>{t('mi_delete')}</button>
             </div>
           </div>
         )
