@@ -1,16 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 import { commonMistakes } from '../../data/checklists.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function CommonMistakes() {
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Частые ошибки новичка</h1>
-      <p className="screen-subtitle">
-        Предупреждения, разбросанные по разным лекциям конспекта, собранные в одну шпаргалку.
-      </p>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('cm_title')}</h1>
+      <p className="screen-subtitle">{t('cm_subtitle')}</p>
 
       <div className="card">
         {commonMistakes.map((m, i) => (

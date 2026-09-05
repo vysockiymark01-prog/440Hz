@@ -28,8 +28,17 @@ export function LanguageProvider({ children }) {
 
   // t('key') — если перевода нет (или он ещё не сделан для этого раздела),
   // молча показываем русский текст, чтобы ничего не «ломалось» на непереведённых экранах.
+  // t('key', {name: value}) — подставляет {name} в строке-шаблоне значением value.
   const t = useCallback(
-    (key) => translations[lang]?.[key] ?? translations.ru[key] ?? key,
+    (key, params) => {
+      let str = translations[lang]?.[key] ?? translations.ru[key] ?? key
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          str = str.replaceAll(`{${k}}`, v)
+        })
+      }
+      return str
+    },
     [lang]
   )
 

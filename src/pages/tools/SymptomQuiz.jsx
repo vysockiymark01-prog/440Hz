@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import symptomQuiz from '../../data/symptomQuiz.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function SymptomQuiz() {
   const navigate = useNavigate()
@@ -10,6 +11,7 @@ export default function SymptomQuiz() {
   const [score, setScore] = useState(0)
   const [finished, setFinished] = useState(false)
   const [best, setBest] = useLocalStorage('pt_symptom_quiz_best_v1', null)
+  const { t } = useLanguage()
 
   const question = symptomQuiz[index]
   const isLast = index === symptomQuiz.length - 1
@@ -44,15 +46,15 @@ export default function SymptomQuiz() {
     const pct = Math.round((score / symptomQuiz.length) * 100)
     return (
       <div>
-        <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-        <h1 className="screen-title">Результат</h1>
+        <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+        <h1 className="screen-title">{t('sq_result_title')}</h1>
         <div className="card" style={{ textAlign: 'center' }}>
           <div className="big-number">{score}/{symptomQuiz.length}</div>
-          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% правильных ответов</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% {t('sq_correct_pct')}</div>
         </div>
-        <button className="btn btn-block btn-primary" onClick={restart}>Пройти ещё раз</button>
+        <button className="btn btn-block btn-primary" onClick={restart}>{t('sq_restart')}</button>
         <button className="btn btn-block" style={{ marginTop: 10 }} onClick={() => navigate('/tools')}>
-          К инструментам
+          {t('sq_to_tools')}
         </button>
       </div>
     )
@@ -60,11 +62,11 @@ export default function SymptomQuiz() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Определи неисправность</h1>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('sq_title')}</h1>
       <p className="screen-subtitle">
-        Вопрос {index + 1} из {symptomQuiz.length}
-        {best ? ` · лучший результат ${best.score}/${best.total}` : ''}
+        {t('sq_question_progress', { n: index + 1, total: symptomQuiz.length })}
+        {best ? `${t('sq_best_result')} ${best.score}/${best.total}` : ''}
       </p>
 
       <div className="card">
@@ -87,7 +89,7 @@ export default function SymptomQuiz() {
 
       {selected !== null && (
         <button className="btn btn-block btn-primary" onClick={next}>
-          {isLast ? 'Завершить' : 'Следующий вопрос →'}
+          {isLast ? t('sq_finish') : t('sq_next')}
         </button>
       )}
     </div>

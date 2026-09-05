@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { workOrderSteps } from '../../data/checklists.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function WorkOrderChecklist() {
   const navigate = useNavigate()
@@ -8,6 +9,7 @@ export default function WorkOrderChecklist() {
   const orderId = searchParams.get('order')
   const storageKey = orderId ? `pt_workorder_checked_v1_${orderId}` : 'pt_workorder_checked_v1'
   const [checked, setChecked] = useLocalStorage(storageKey, {})
+  const { t } = useLanguage()
 
   const toggle = (id) => setChecked((c) => ({ ...c, [id]: !c[id] }))
   const reset = () => setChecked({})
@@ -20,11 +22,11 @@ export default function WorkOrderChecklist() {
         className="back-link"
         onClick={() => navigate(orderId ? '/tools/my-orders' : '/tools')}
       >
-        {orderId ? '‹ К заказу' : '‹ Инструменты'}
+        {orderId ? t('back_order') : `‹ ${t('back_tools')}`}
       </button>
-      <h1 className="screen-title">Порядок работы на заказе</h1>
+      <h1 className="screen-title">{t('wo_title')}</h1>
       <p className="screen-subtitle">
-        {done} из {workOrderSteps.length} шагов выполнено{orderId ? ' · сохраняется для этого заказа' : ''}
+        {t('wo_progress', { done, total: workOrderSteps.length })}{orderId ? t('dc_saved_for_order') : ''}
       </p>
 
       <div className="card">
@@ -38,7 +40,7 @@ export default function WorkOrderChecklist() {
         ))}
       </div>
 
-      <button className="btn btn-block" onClick={reset}>Сбросить чек-лист</button>
+      <button className="btn btn-block" onClick={reset}>{t('wo_reset')}</button>
     </div>
   )
 }

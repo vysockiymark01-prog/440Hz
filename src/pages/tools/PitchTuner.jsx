@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { usePitchDetector } from '../../hooks/usePitchDetector.js'
 import { noteFromFrequency } from '../../utils/noteFromFrequency.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const IN_TUNE_TOLERANCE = 5
 
@@ -17,23 +18,21 @@ export default function PitchTuner() {
     if (isListening) stop()
     else start()
   }
+  const { t } = useLanguage()
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools')}>‹ Инструменты</button>
-      <h1 className="screen-title">Определитель высоты звука</h1>
-      <p className="screen-subtitle">
-        Слушает микрофон и определяет ближайшую ноту по звуку струны. Лучше работает в тихом помещении,
-        поднеся телефон ближе к деке.
-      </p>
+      <button className="back-link" onClick={() => navigate('/tools')}>‹ {t('back_tools')}</button>
+      <h1 className="screen-title">{t('pd_title')}</h1>
+      <p className="screen-subtitle">{t('pd_subtitle')}</p>
 
       <div className="card" style={{ textAlign: 'center', minHeight: 150 }}>
         {!isListening && (
-          <div style={{ color: 'var(--text-faint)', padding: '20px 0' }}>Нажмите «Слушать», чтобы начать</div>
+          <div style={{ color: 'var(--text-faint)', padding: '20px 0' }}>{t('pd_press_listen')}</div>
         )}
 
         {isListening && !note && (
-          <div style={{ color: 'var(--text-faint)', padding: '20px 0' }}>Слушаю… сыграйте ноту</div>
+          <div style={{ color: 'var(--text-faint)', padding: '20px 0' }}>{t('pd_listening')}</div>
         )}
 
         {isListening && note && (
@@ -42,7 +41,7 @@ export default function PitchTuner() {
               {note.name}<span style={{ fontSize: 22 }}>{note.octave}</span>
             </div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 14 }}>
-              {frequency.toFixed(1)} Гц · {cents > 0 ? '+' : ''}{cents} центов
+              {frequency.toFixed(1)} Гц · {cents > 0 ? '+' : ''}{cents} {t('pd_cents')}
             </div>
 
             <div style={{ position: 'relative', height: 30 }}>
@@ -75,12 +74,12 @@ export default function PitchTuner() {
 
       {error && (
         <div className="result-flash bad">
-          Не удалось получить доступ к микрофону. Разрешите доступ в настройках браузера и попробуйте снова.
+          {t('pd_mic_error')}
         </div>
       )}
 
       <button className="btn btn-block btn-primary" style={{ marginTop: 10 }} onClick={toggle}>
-        {isListening ? '⏸ Остановить' : '🎙 Слушать'}
+        {isListening ? t('pd_stop') : t('pd_listen')}
       </button>
     </div>
   )
