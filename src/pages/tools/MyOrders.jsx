@@ -117,7 +117,7 @@ function shareReminder(order, t) {
 }
 
 function shareOnMyWay(order, t) {
-  const eta = window.prompt('Через сколько минут будете на месте?', '30')
+  const eta = window.prompt(t ? t('mo_eta_prompt') : 'Через сколько минут будете на месте?', '30')
   if (eta === null) return
   const parts = ['Выезжаю к вам']
   if (eta.trim()) parts.push(`, буду примерно через ${eta.trim()} мин`)

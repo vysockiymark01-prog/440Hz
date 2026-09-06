@@ -3,11 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
+// Хранимое значение единицы измерения всегда остаётся русской аббревиатурой
+// (это внутренний код, как и paymentStatus в заказах) — меняется только
+// отображаемая подпись, чтобы не ломать уже сохранённые у пользователя данные.
 const UNITS = ['шт', 'м', 'уп']
+const UNIT_LABELS_MN = { 'шт': 'ш', 'м': 'м', 'уп': 'баг' }
+
+function unitLabel(unit, lang) {
+  if (lang === 'mn') return UNIT_LABELS_MN[unit] || unit
+  return unit
+}
 
 export default function Inventory() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [items, setItems] = useLocalStorage('pt_inventory_v1', [])
   const [name, setName] = useState('')
   const [unit, setUnit] = useState('шт')
@@ -74,7 +83,7 @@ export default function Inventory() {
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'block', marginBottom: 4 }}>{t('inv_label_unit')}</label>
             <select value={unit} onChange={(e) => setUnit(e.target.value)}>
-              {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              {UNITS.map((u) => <option key={u} value={u}>{unitLabel(u, lang)}</option>)}
             </select>
           </div>
         </div>
@@ -101,8 +110,8 @@ export default function Inventory() {
               <div>
                 <div style={{ fontWeight: 700 }}>{it.name}</div>
                 <div style={{ color: low ? 'var(--danger)' : 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
-                  {it.qty} {it.unit} {t('inv_in_stock')}{low ? t('inv_low_stock_suffix') : ''}
-                  {it.unitCost > 0 ? ` · ${it.unitCost} ₽/${it.unit}` : ''}
+                  {it.qty} {unitLabel(it.unit, lang)} {t('inv_in_stock')}{low ? t('inv_low_stock_suffix') : ''}
+                  {it.unitCost > 0 ? ` · ${it.unitCost} ₽/${unitLabel(it.unit, lang)}` : ''}
                 </div>
               </div>
               <button className="btn btn-sm" onClick={() => removeItem(it.id)}>{t('inv_delete_btn')}</button>
