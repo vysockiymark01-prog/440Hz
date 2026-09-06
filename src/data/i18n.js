@@ -62,6 +62,14 @@ const translations = {
     trainer_item_ear_diagnostics: 'Диагностика на слух',
 
     reference_title: 'Справочник',
+
+    gl_title: 'Глоссарий',
+    gl_search_placeholder: 'Поиск термина…',
+    gl_letter_all: 'Все',
+    gl_empty: 'Ничего не найдено',
+
+    glt_not_found: 'Термин не найден.',
+    glt_lecture_prefix: 'Лекция {num} · {title}',
     reference_item_search: 'Поиск по справочнику',
     reference_item_glossary: 'Глоссарий терминов',
     reference_item_quiz: 'Тесты по темам',
@@ -538,6 +546,14 @@ const translations = {
     db_status_parse_fail: 'Не удалось прочитать файл — убедитесь, что это резервная копия JSON.',
     db_status_read_fail: 'Не удалось прочитать файл.',
 
+    rh_subtitle: 'Конспект курса по настройке фортепиано, разбитый на короткие карточки',
+    rh_progress_title: 'Прогресс курса',
+    rh_topics_open: 'Открыто тем: {done} из {total}',
+    rh_term_of_day: 'Повторим термин:',
+    rh_lock_prev_test: 'сначала пройдите тест предыдущей темы',
+    rh_unlock_at: 'откроется {date} в {time}',
+    rh_days: 'через {n} дней',
+
     fav_title: 'Избранное',
     fav_empty_line1: 'Пока ничего не добавлено.',
     fav_empty_line2: 'Нажмите ☆ на статье или термине глоссария.',
@@ -668,6 +684,14 @@ const translations = {
     trainer_item_ear_diagnostics: 'Сонсголоор оношлох',
 
     reference_title: 'Лавлах',
+
+    gl_title: 'Нэр томьёоны толь',
+    gl_search_placeholder: 'Нэр томьёо хайх…',
+    gl_letter_all: 'Бүгд',
+    gl_empty: 'Юу ч олдсонгүй',
+
+    glt_not_found: 'Нэр томьёо олдсонгүй.',
+    glt_lecture_prefix: 'Лекц {num} · {title}',
     reference_item_search: 'Лавлахаас хайх',
     reference_item_glossary: 'Нэр томьёоны толь',
     reference_item_quiz: 'Сэдвээр тест',
@@ -1143,6 +1167,14 @@ const translations = {
     db_status_restored: 'Өгөгдөл сэргээгдлээ. Аппликейшныг дахин ачаалж байна…',
     db_status_parse_fail: 'Файлыг уншиж чадсангүй — энэ нь JSON нөөц хуулбар мөн эсэхийг шалгана уу.',
     db_status_read_fail: 'Файлыг уншиж чадсангүй.',
+
+    rh_subtitle: 'Пиано тааруулах курсын конспект, товч карт болгон хуваасан',
+    rh_progress_title: 'Курсын ахиц',
+    rh_topics_open: 'Нээгдсэн сэдэв: {total}-с {done}',
+    rh_term_of_day: 'Нэр томьёог давтъя:',
+    rh_lock_prev_test: 'эхлээд өмнөх сэдвийн тестийг өгнө үү',
+    rh_unlock_at: '{date}, {time} цагт нээгдэнэ',
+    rh_days: '{n} хоногийн дараа',
 
     fav_title: 'Дуртай',
     fav_empty_line1: 'Одоогоор юу ч нэмээгүй байна.',

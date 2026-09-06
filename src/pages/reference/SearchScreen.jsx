@@ -5,7 +5,7 @@ import lectures from '../../data/lectures.js'
 import glossary from '../../data/glossary.js'
 import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-function buildIndex(glossaryLabel) {
+function buildIndex(glossaryLabel, tr) {
   const items = []
   for (const lecture of lectures) {
     for (const article of lecture.articles) {
@@ -23,8 +23,8 @@ function buildIndex(glossaryLabel) {
     items.push({
       type: 'term',
       id: term.id,
-      title: term.term,
-      text: term.definition,
+      title: tr(term.term),
+      text: tr(term.definition),
       lectureTitle: glossaryLabel,
       to: `/reference/glossary/${term.id}`,
     })
@@ -35,10 +35,10 @@ function buildIndex(glossaryLabel) {
 export default function SearchScreen() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   const fuse = useMemo(() => {
-    const searchIndex = buildIndex(t('srch_glossary_label'))
+    const searchIndex = buildIndex(t('srch_glossary_label'), tr)
     return new Fuse(searchIndex, {
       keys: [
         { name: 'title', weight: 0.6 },
@@ -48,7 +48,7 @@ export default function SearchScreen() {
       ignoreLocation: true,
       minMatchCharLength: 2,
     })
-  }, [t])
+  }, [t, tr])
 
   const results = useMemo(() => {
     if (query.trim().length < 2) return []

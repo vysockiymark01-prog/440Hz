@@ -6,7 +6,7 @@ import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function Favorites() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
   const { favorites } = useFavorites()
 
   const favArticles = favorites.articles
@@ -54,7 +54,7 @@ export default function Favorites() {
           <div className="section-label">{t('fav_terms_label')}</div>
           {favTerms.map((term) => (
             <Link key={term.id} to={`/reference/glossary/${term.id}`} className="card-tap row">
-              <span style={{ fontWeight: 700 }}>{term.term}</span>
+              <span style={{ fontWeight: 700 }}>{tr(term.term)}</span>
               <span>›</span>
             </Link>
           ))}

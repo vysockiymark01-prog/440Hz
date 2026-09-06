@@ -4,11 +4,16 @@ import glossary from '../../data/glossary.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
 import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-function formatUnlockDate(iso) {
+function formatUnlockDate(iso, lang, t) {
   if (!iso) return ''
   const d = new Date(iso)
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) +
-    ' в ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  const time = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  if (lang === 'mn') {
+    // Хромиум-браузерүүдийн ICU-д mn-MN бүрэн дэмжигдэхгүй байж болзошгүй тул
+    // огноог гараар (тоон сар) форматлана.
+    return t('rh_unlock_at', { date: `${d.getMonth() + 1}-р сарын ${d.getDate()}`, time })
+  }
+  return t('rh_unlock_at', { date: d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }), time })
 }
 
 function daysUntil(iso) {
@@ -18,12 +23,17 @@ function daysUntil(iso) {
   return Math.ceil(diffMs / 86400000)
 }
 
-function pluralDays(n) {
+function pluralDaysRu(n) {
   const mod10 = n % 10
   const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return `${n} день`
-  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return `${n} дня`
-  return `${n} дней`
+  if (mod10 === 1 && mod100 !== 11) return `через ${n} день`
+  if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return `через ${n} дня`
+  return `через ${n} дней`
+}
+
+function pluralDays(n, lang, t) {
+  if (lang === 'mn') return t('rh_days', { n })
+  return pluralDaysRu(n)
 }
 
 function dayOfYear() {
@@ -36,27 +46,27 @@ function dayOfYear() {
 export default function ReferenceHome() {
   const { status, isLectureUnlocked, unlockDateFor, lockReason, testsPassed, passedCount, totalLectures } = useCourseProgress()
   const isNovice = status === 'novice'
-  const { t } = useLanguage()
+  const { t, tr, lang } = useLanguage()
 
   const termOfDay = glossary.length > 0 ? glossary[dayOfYear() % glossary.length] : null
 
   return (
     <div>
       <h1 className="screen-title">{t('reference_title')}</h1>
-      <p className="screen-subtitle">Конспект курса по настройке фортепиано, разбитый на короткие карточки</p>
+      <p className="screen-subtitle">{t('rh_subtitle')}</p>
 
       {isNovice && (
         <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Прогресс курса</div>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>{t('rh_progress_title')}</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-            Открыто тем: {passedCount} из {totalLectures}
+            {t('rh_topics_open', { done: passedCount, total: totalLectures })}
           </div>
         </div>
       )}
 
       {termOfDay && (
         <Link to={`/reference/glossary/${termOfDay.id}`} className="card-tap row" style={{ marginBottom: 14 }}>
-          <span className="row-start">🔁 <span><b>Повторим термин:</b> {termOfDay.term}</span></span>
+          <span className="row-start">🔁 <span><b>{t('rh_term_of_day')}</b> {tr(termOfDay.term)}</span></span>
           <span>›</span>
         </Link>
       )}
@@ -95,9 +105,9 @@ export default function ReferenceHome() {
               <div>{l.title}</div>
               <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 2 }}>
                 {lockReason(l.id) === 'prev_test'
-                  ? 'сначала пройдите тест предыдущей темы'
-                  : `откроется ${formatUnlockDate(unlockDateFor(l.id))}${
-                      daysUntil(unlockDateFor(l.id)) > 0 ? ` · через ${pluralDays(daysUntil(unlockDateFor(l.id)))}` : ''
+                  ? t('rh_lock_prev_test')
+                  : `${formatUnlockDate(unlockDateFor(l.id), lang, t)}${
+                      daysUntil(unlockDateFor(l.id)) > 0 ? ` · ${pluralDays(daysUntil(unlockDateFor(l.id)), lang, t)}` : ''
                     }`}
               </div>
             </div>
