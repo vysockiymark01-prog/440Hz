@@ -52,7 +52,7 @@ export default function Appearance() {
             className={`theme-option ${scale === opt.value ? 'active' : ''}`}
             onClick={() => setScale(opt.value)}
           >
-            <span style={{ fontWeight: 700 }}>{opt.label}</span>
+            <span style={{ fontWeight: 700 }}>{t(opt.labelKey)}</span>
             <span className="check">✓</span>
           </button>
         ))}

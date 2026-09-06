@@ -4,9 +4,9 @@ const STORAGE_KEY = 'pt_font_scale_v1'
 const FontScaleContext = createContext(null)
 
 export const FONT_SCALES = [
-  { value: 'normal', label: 'Обычный', zoom: 1 },
-  { value: 'large', label: 'Крупный', zoom: 1.15 },
-  { value: 'xlarge', label: 'Очень крупный', zoom: 1.3 },
+  { value: 'normal', labelKey: 'appearance_font_normal', zoom: 1 },
+  { value: 'large', labelKey: 'appearance_font_large', zoom: 1.15 },
+  { value: 'xlarge', labelKey: 'appearance_font_xlarge', zoom: 1.3 },
 ]
 
 function readStoredScale() {
