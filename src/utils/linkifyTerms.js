@@ -1,4 +1,7 @@
-const CYR = 'а-яёА-ЯЁ'
+// Кириллица + монгольские буквы Өө/Үү (их нет в русском алфавите, но они
+// часто встречаются в соседних словах монгольского текста статей — без них
+// граница термина определялась бы неверно и в монгольском режиме).
+const CYR = 'а-яёА-ЯЁөүӨҮ'
 
 let cachedRegex = null
 let cachedStems = null
@@ -7,7 +10,9 @@ function buildRegex(termStems) {
   if (cachedRegex && cachedStems === termStems) return cachedRegex
   const sorted = [...termStems].sort((a, b) => b.stem.length - a.stem.length)
   const alternation = sorted.map((t) => t.stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  const re = new RegExp(`(?<![${CYR}])(${alternation})[${CYR}]{0,3}(?![${CYR}])`, 'giu')
+  // До 4 букв суффикса — покрывает падежные окончания и русского, и
+  // монгольского языка (например «-ийн», «-тай», «-аас»).
+  const re = new RegExp(`(?<![${CYR}])(${alternation})[${CYR}]{0,4}(?![${CYR}])`, 'giu')
   cachedRegex = re
   cachedStems = termStems
   return re

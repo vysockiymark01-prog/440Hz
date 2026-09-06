@@ -677,6 +677,9 @@ const translations = {
     fr_correct_was: 'Правильно: {answer}',
     fr_notes_label: 'Личные заметки',
     fr_to_lecture: 'К лекции',
+
+    ai_close: 'Закрыть',
+    lang_switch_aria: 'Сменить язык',
   },
   mn: {
     nav_reference: 'Лавлах',
@@ -1347,6 +1350,9 @@ const translations = {
     fr_correct_was: 'Зөв хариулт: {answer}',
     fr_notes_label: 'Хувийн тэмдэглэл',
     fr_to_lecture: 'Лекц рүү',
+
+    ai_close: 'Хаах',
+    lang_switch_aria: 'Хэл солих',
   },
 }
 

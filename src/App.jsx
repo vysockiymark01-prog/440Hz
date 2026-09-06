@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import BottomNav from './components/BottomNav.jsx'
 import ThemeQuickToggle from './components/ThemeQuickToggle.jsx'
+import LangQuickToggle from './components/LangQuickToggle.jsx'
 import VisitReminderCheck from './components/VisitReminderCheck.jsx'
 
 const ReferenceHome = lazy(() => import('./pages/reference/ReferenceHome.jsx'))
@@ -63,6 +64,7 @@ export default function App() {
     <>
       <VisitReminderCheck />
       <ThemeQuickToggle />
+      <LangQuickToggle />
       <main className="app-main">
         <Suspense fallback={<RouteFallback />}>
           <Routes>

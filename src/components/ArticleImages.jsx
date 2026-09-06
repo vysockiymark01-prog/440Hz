@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import articleImages from '../data/articleImages.js'
 import ZoomableImage from './ZoomableImage.jsx'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
 
 export default function ArticleImages({ articleId }) {
   const images = articleImages[articleId]
   const [lightbox, setLightbox] = useState(null)
+  const { t, tr } = useLanguage()
 
   // Пока открыто фото на весь экран, страница под ним не должна скроллиться —
   // иначе жест по картинке листает текст статьи позади.
@@ -25,7 +27,7 @@ export default function ArticleImages({ articleId }) {
         <figure key={i} style={{ margin: '0 0 16px' }}>
           <img
             src={`./images/${img.src}`}
-            alt={img.caption}
+            alt={tr(img.caption)}
             loading="lazy"
             onClick={() => setLightbox(img)}
             style={{
@@ -38,7 +40,7 @@ export default function ArticleImages({ articleId }) {
             }}
           />
           <figcaption style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, lineHeight: 1.4 }}>
-            {img.caption}
+            {tr(img.caption)}
           </figcaption>
         </figure>
       ))}
@@ -55,7 +57,7 @@ export default function ArticleImages({ articleId }) {
         >
           <button
             onClick={(e) => { e.stopPropagation(); setLightbox(null) }}
-            aria-label="Закрыть"
+            aria-label={t('ai_close')}
             style={{
               position: 'absolute', top: 16, right: 16, zIndex: 201,
               width: 40, height: 40, borderRadius: '50%', border: 'none',
@@ -65,7 +67,7 @@ export default function ArticleImages({ articleId }) {
           >
             ✕
           </button>
-          <ZoomableImage src={`./images/${lightbox.src}`} alt={lightbox.caption} />
+          <ZoomableImage src={`./images/${lightbox.src}`} alt={tr(lightbox.caption)} />
         </div>
       )}
     </div>
