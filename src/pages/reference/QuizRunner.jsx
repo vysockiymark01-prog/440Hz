@@ -10,7 +10,7 @@ import { useLanguage } from '../../contexts/LanguageContext.jsx'
 export default function QuizRunner() {
   const { lectureId } = useParams()
   const navigate = useNavigate()
-  const { tr } = useLanguage()
+  const { t, tr } = useLanguage()
   const lecture = lectures.find((l) => l.id === lectureId)
   const questions = useMemo(() => quizzes[lectureId] || [], [lectureId])
   const {
@@ -30,19 +30,19 @@ export default function QuizRunner() {
   const [wrongAnswers, setWrongAnswers] = useState([])
 
   if (!lecture || questions.length === 0) {
-    return <div className="empty-state">Тест не найден.</div>
+    return <div className="empty-state">{t('qr_not_found')}</div>
   }
 
   if (!isLectureUnlocked(lecture.id)) {
     const reason = lockReason(lecture.id)
     return (
       <div>
-        <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ Тесты по темам</button>
+        <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ {t('qh_title')}</button>
         <h1 className="screen-title">{lecture.title}</h1>
         <div className="empty-state">
           {reason === 'prev_test'
-            ? 'Этот тест пока закрыт — сначала пройдите тест по предыдущей теме.'
-            : `Этот тест откроется ${new Date(unlockDateFor(lecture.id)).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}.`}
+            ? t('qr_locked_prev_test')
+            : t('qr_locked_until', { date: new Date(unlockDateFor(lecture.id)).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) })}
         </div>
       </div>
     )
@@ -104,14 +104,14 @@ export default function QuizRunner() {
   if (finished && courseJustCompleted) {
     return (
       <div>
-        <h1 className="screen-title">Курс пройден! 🎉</h1>
+        <h1 className="screen-title">{t('qr_course_complete_title')}</h1>
         <div className="card" style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🏆</div>
-          <div style={{ fontWeight: 700, marginBottom: 10 }}>Все темы курса открыты и тесты пройдены</div>
+          <div style={{ fontWeight: 700, marginBottom: 10 }}>{t('qr_course_complete_desc')}</div>
           <div style={{ fontStyle: 'italic', color: 'var(--text)', marginBottom: 6 }}>«{tr(finalQuote.text)}»</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>— {finalQuote.author}</div>
         </div>
-        <button className="btn btn-block btn-primary" onClick={() => navigate('/reference')}>К справочнику</button>
+        <button className="btn btn-block btn-primary" onClick={() => navigate('/reference')}>{t('qr_to_reference')}</button>
       </div>
     )
   }
@@ -120,11 +120,11 @@ export default function QuizRunner() {
     const pct = Math.round((score / questions.length) * 100)
     return (
       <div>
-        <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ Тесты по темам</button>
-        <h1 className="screen-title">Результат</h1>
+        <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ {t('qh_title')}</button>
+        <h1 className="screen-title">{t('qr_result_title')}</h1>
         <div className="card" style={{ textAlign: 'center' }}>
           <div className="big-number">{score}/{questions.length}</div>
-          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% правильных ответов</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>{pct}% {t('qr_correct_pct')}</div>
         </div>
         {quote && (
           <div className="card" style={{ textAlign: 'center' }}>
@@ -135,24 +135,24 @@ export default function QuizRunner() {
 
         {wrongAnswers.length > 0 && (
           <>
-            <div className="section-label">Стоит повторить</div>
+            <div className="section-label">{t('qr_review_label')}</div>
             <div className="card">
               {wrongAnswers.map((w, i) => (
                 <div key={i} style={{ marginBottom: i < wrongAnswers.length - 1 ? 12 : 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{w.q}</div>
-                  <div style={{ color: 'var(--success)', fontSize: 13, marginTop: 2 }}>Правильно: {w.correct}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{tr(w.q)}</div>
+                  <div style={{ color: 'var(--success)', fontSize: 13, marginTop: 2 }}>{t('qr_correct_was', { answer: tr(w.correct) })}</div>
                 </div>
               ))}
             </div>
             <button className="btn btn-block" onClick={() => navigate(`/reference/${lectureId}`)}>
-              Повторить материал лекции
+              {t('qr_repeat_lecture')}
             </button>
           </>
         )}
 
-        <button className="btn btn-block btn-primary" style={{ marginTop: 10 }} onClick={restart}>Пройти ещё раз</button>
+        <button className="btn btn-block btn-primary" style={{ marginTop: 10 }} onClick={restart}>{t('qr_restart')}</button>
         <button className="btn btn-block" style={{ marginTop: 10 }} onClick={() => navigate('/reference/quiz')}>
-          К списку тестов
+          {t('qr_to_quiz_list')}
         </button>
       </div>
     )
@@ -160,12 +160,12 @@ export default function QuizRunner() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ Тесты по темам</button>
+      <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ {t('qh_title')}</button>
       <h1 className="screen-title">{lecture.title}</h1>
-      <p className="screen-subtitle">Вопрос {index + 1} из {questions.length}</p>
+      <p className="screen-subtitle">{t('qr_question_progress', { n: index + 1, total: questions.length })}</p>
 
       <div className="card">
-        <div style={{ fontWeight: 700, marginBottom: 14 }}>{question.q}</div>
+        <div style={{ fontWeight: 700, marginBottom: 14 }}>{tr(question.q)}</div>
         {question.options.map((opt, i) => {
           let cls = 'theme-option'
           if (selected !== null) {
@@ -174,7 +174,7 @@ export default function QuizRunner() {
           }
           return (
             <button key={i} className={cls} style={{ marginBottom: 8 }} onClick={() => choose(i)}>
-              <span>{opt}</span>
+              <span>{tr(opt)}</span>
               {selected !== null && i === question.correctIndex && <span className="check" style={{ visibility: 'visible' }}>✓</span>}
               {selected !== null && i === selected && i !== question.correctIndex && <span className="check" style={{ visibility: 'visible', color: 'var(--danger)' }}>✕</span>}
             </button>
@@ -184,7 +184,7 @@ export default function QuizRunner() {
 
       {selected !== null && (
         <button className="btn btn-block btn-primary" onClick={next}>
-          {isLast ? 'Завершить тест' : 'Следующий вопрос →'}
+          {isLast ? t('qr_finish') : t('qr_next')}
         </button>
       )}
     </div>

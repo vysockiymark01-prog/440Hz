@@ -3,17 +3,19 @@ import lectures from '../../data/lectures.js'
 import quizzes from '../../data/quizzes.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function QuizHome() {
   const navigate = useNavigate()
   const [results] = useLocalStorage('pt_quiz_results_v1', {})
   const { isLectureUnlocked } = useCourseProgress()
+  const { t } = useLanguage()
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/reference')}>‹ Справочник</button>
-      <h1 className="screen-title">Тесты по темам</h1>
-      <p className="screen-subtitle">По 6 вопросов на каждую лекцию — проверьте, что запомнилось</p>
+      <button className="back-link" onClick={() => navigate('/reference')}>‹ {t('back_reference')}</button>
+      <h1 className="screen-title">{t('qh_title')}</h1>
+      <p className="screen-subtitle">{t('qh_subtitle')}</p>
 
       {lectures.map((l) => {
         const questions = quizzes[l.id] || []
@@ -26,7 +28,7 @@ export default function QuizHome() {
                 <span className="pill badge-accent">{l.num}</span>
                 <span>
                   <div style={{ fontWeight: 700 }}>{l.title}</div>
-                  <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>🔒 тема ещё закрыта</div>
+                  <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>{t('qh_locked')}</div>
                 </span>
               </span>
             </div>
@@ -39,8 +41,8 @@ export default function QuizHome() {
               <span>
                 <div style={{ fontWeight: 700 }}>{l.title}</div>
                 <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
-                  {questions.length} вопросов
-                  {best ? ` · лучший результат ${best.score}/${best.total}` : ''}
+                  {t('qh_questions_n', { n: questions.length })}
+                  {best ? t('qh_best_result', { score: best.score, total: best.total }) : ''}
                 </div>
               </span>
             </span>

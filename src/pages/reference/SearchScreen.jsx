@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import Fuse from 'fuse.js'
 import lectures from '../../data/lectures.js'
 import glossary from '../../data/glossary.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-function buildIndex() {
+function buildIndex(glossaryLabel) {
   const items = []
   for (const lecture of lectures) {
     for (const article of lecture.articles) {
@@ -24,48 +25,51 @@ function buildIndex() {
       id: term.id,
       title: term.term,
       text: term.definition,
-      lectureTitle: 'Глоссарий',
+      lectureTitle: glossaryLabel,
       to: `/reference/glossary/${term.id}`,
     })
   }
   return items
 }
 
-const searchIndex = buildIndex()
-const fuse = new Fuse(searchIndex, {
-  keys: [
-    { name: 'title', weight: 0.6 },
-    { name: 'text', weight: 0.4 },
-  ],
-  threshold: 0.32,
-  ignoreLocation: true,
-  minMatchCharLength: 2,
-})
-
 export default function SearchScreen() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const { t } = useLanguage()
+
+  const fuse = useMemo(() => {
+    const searchIndex = buildIndex(t('srch_glossary_label'))
+    return new Fuse(searchIndex, {
+      keys: [
+        { name: 'title', weight: 0.6 },
+        { name: 'text', weight: 0.4 },
+      ],
+      threshold: 0.32,
+      ignoreLocation: true,
+      minMatchCharLength: 2,
+    })
+  }, [t])
 
   const results = useMemo(() => {
     if (query.trim().length < 2) return []
     return fuse.search(query).slice(0, 30).map((r) => r.item)
-  }, [query])
+  }, [query, fuse])
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/reference')}>‹ Справочник</button>
-      <h1 className="screen-title">Поиск</h1>
+      <button className="back-link" onClick={() => navigate('/reference')}>‹ {t('back_reference')}</button>
+      <h1 className="screen-title">{t('srch_title')}</h1>
       <input
         type="search"
         autoFocus
-        placeholder="Например: биения, вирбельбанк, штейнунг…"
+        placeholder={t('srch_placeholder')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         style={{ marginBottom: 14 }}
       />
 
       {query.trim().length >= 2 && results.length === 0 && (
-        <div className="empty-state">Ничего не найдено</div>
+        <div className="empty-state">{t('srch_empty')}</div>
       )}
 
       {results.map((r) => (
