@@ -12,10 +12,10 @@ import OnboardingGate from './components/OnboardingGate.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <PasswordGate>
-      <CourseProgressProvider>
-        <OnboardingGate>
-          <LanguageProvider>
+    <LanguageProvider>
+      <PasswordGate>
+        <CourseProgressProvider>
+          <OnboardingGate>
             <ThemeProvider>
               <FontScaleProvider>
                 <HashRouter>
@@ -23,9 +23,9 @@ createRoot(document.getElementById('root')).render(
                 </HashRouter>
               </FontScaleProvider>
             </ThemeProvider>
-          </LanguageProvider>
-        </OnboardingGate>
-      </CourseProgressProvider>
-    </PasswordGate>
+          </OnboardingGate>
+        </CourseProgressProvider>
+      </PasswordGate>
+    </LanguageProvider>
   </StrictMode>,
 )

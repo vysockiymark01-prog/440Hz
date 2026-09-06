@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import LangQuickToggle from './LangQuickToggle.jsx'
 
 // SHA-256 хэш пароля (не сам пароль) - см. README для смены пароля
 const PASSWORD_HASH = '2e02bb4bed5af6a77fb3ab61077073123f8f606ea7bb5c173f2582bd289be957'
@@ -23,6 +25,7 @@ function isTrustedWebActivity() {
 }
 
 export default function PasswordGate({ children }) {
+  const { t } = useLanguage()
   const [unlocked, setUnlocked] = useState(() => {
     if (isTrustedWebActivity()) return true
     try {
@@ -75,10 +78,11 @@ export default function PasswordGate({ children }) {
         fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif',
       }}
     >
+      <LangQuickToggle />
       <div style={{ fontSize: 40 }}>🔒</div>
-      <h1 style={{ fontSize: 20, margin: 0, textAlign: 'center' }}>Настройщик фортепиано</h1>
+      <h1 style={{ fontSize: 20, margin: 0, textAlign: 'center' }}>{t('app_name')}</h1>
       <p style={{ color: '#a0a0a6', margin: 0, textAlign: 'center', maxWidth: 320 }}>
-        Доступ только для выпускников курса. Введите пароль.
+        {t('pg_subtitle')}
       </p>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280 }}>
         <input
@@ -89,7 +93,7 @@ export default function PasswordGate({ children }) {
             setValue(e.target.value)
             setError(false)
           }}
-          placeholder="Пароль"
+          placeholder={t('pg_placeholder')}
           style={{
             background: '#1c1c1e',
             border: `1px solid ${error ? '#e0645a' : '#2e2e32'}`,
@@ -101,7 +105,7 @@ export default function PasswordGate({ children }) {
           }}
         />
         {error && (
-          <div style={{ color: '#e0645a', fontSize: 13 }}>Неверный пароль, попробуйте ещё раз.</div>
+          <div style={{ color: '#e0645a', fontSize: 13 }}>{t('pg_error')}</div>
         )}
         <button
           type="submit"
@@ -118,7 +122,7 @@ export default function PasswordGate({ children }) {
             opacity: checking || !value ? 0.6 : 1,
           }}
         >
-          Войти
+          {t('pg_submit')}
         </button>
       </form>
     </div>

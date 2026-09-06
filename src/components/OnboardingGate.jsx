@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useCourseProgress } from '../contexts/CourseProgressContext.jsx'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
+import LangQuickToggle from './LangQuickToggle.jsx'
 
 function defaultDateTimeLocal() {
   const d = new Date()
@@ -10,6 +12,7 @@ function defaultDateTimeLocal() {
 
 export default function OnboardingGate({ children }) {
   const { status, setStatus, startNoviceSchedule } = useCourseProgress()
+  const { t } = useLanguage()
   const [step, setStep] = useState('choice') // 'choice' | 'date'
   const [dateValue, setDateValue] = useState(defaultDateTimeLocal)
 
@@ -31,10 +34,11 @@ export default function OnboardingGate({ children }) {
   if (step === 'choice') {
     return (
       <div style={wrapStyle}>
+        <LangQuickToggle />
         <div style={{ fontSize: 40 }}>🎹</div>
-        <h1 style={{ fontSize: 20, margin: 0, textAlign: 'center' }}>Настройщик фортепиано</h1>
+        <h1 style={{ fontSize: 20, margin: 0, textAlign: 'center' }}>{t('app_name')}</h1>
         <p style={{ color: 'var(--text-dim, #a0a0a6)', margin: 0, textAlign: 'center', maxWidth: 340 }}>
-          Расскажите немного о себе, чтобы приложение подстроилось под вас.
+          {t('og_subtitle')}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 320 }}>
@@ -50,12 +54,9 @@ export default function OnboardingGate({ children }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>🌱 Я новичок</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>{t('og_novice_title')}</div>
             <div style={{ color: 'var(--text-dim, #a0a0a6)', fontSize: 13, lineHeight: 1.5 }}>
-              Темы будут открываться постепенно — по одной, по мере прохождения курса. Чтобы открыть
-              следующую тему, нужно набрать в тесте текущей темы хотя бы один правильный ответ, и должна
-              подойти дата соответствующей лекции. Это поможет не забегать вперёд и разбираться в материале
-              по порядку.
+              {t('og_novice_desc')}
             </div>
           </button>
 
@@ -71,9 +72,9 @@ export default function OnboardingGate({ children }) {
               cursor: 'pointer',
             }}
           >
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>🎓 Я уже проходил курс</div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>{t('og_graduate_title')}</div>
             <div style={{ color: 'var(--text-dim, #a0a0a6)', fontSize: 13, lineHeight: 1.5 }}>
-              Весь справочник, тесты и инструменты открыты сразу, без ограничений.
+              {t('og_graduate_desc')}
             </div>
           </button>
         </div>
@@ -83,11 +84,11 @@ export default function OnboardingGate({ children }) {
 
   return (
     <div style={wrapStyle}>
+      <LangQuickToggle />
       <div style={{ fontSize: 40 }}>📅</div>
-      <h1 style={{ fontSize: 20, margin: 0, textAlign: 'center' }}>Когда первая лекция?</h1>
+      <h1 style={{ fontSize: 20, margin: 0, textAlign: 'center' }}>{t('og_date_title')}</h1>
       <p style={{ color: 'var(--text-dim, #a0a0a6)', margin: 0, textAlign: 'center', maxWidth: 320 }}>
-        Укажите дату и время первой лекции. Остальные темы приложение расставит автоматически — по будням,
-        без выходных, в это же время. Даты всегда можно будет поправить в настройках.
+        {t('og_date_subtitle')}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280 }}>
         <input
@@ -117,7 +118,7 @@ export default function OnboardingGate({ children }) {
             cursor: 'pointer',
           }}
         >
-          Начать курс
+          {t('og_start_btn')}
         </button>
         <button
           onClick={() => setStep('choice')}
@@ -130,7 +131,7 @@ export default function OnboardingGate({ children }) {
             cursor: 'pointer',
           }}
         >
-          ‹ Назад
+          {t('og_back_btn')}
         </button>
       </div>
     </div>

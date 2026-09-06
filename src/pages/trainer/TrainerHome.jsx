@@ -17,35 +17,37 @@ export default function TrainerHome() {
   const { streak, todayDone } = useTrainerStreak()
   const [examHistory] = useLocalStorage('pt_daily_exam_v1', { history: [] })
   const recentExams = examHistory.history.slice(-14)
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const modes = MODE_KEYS.map((m) => ({ ...m, title: t(m.titleKey), desc: t(m.descKey) }))
 
   return (
     <div>
       <h1 className="screen-title">{t('trainer_title')}</h1>
-      <p className="screen-subtitle">Web Audio: две синусоиды с плавной атакой/затуханием, без щелчков</p>
+      <p className="screen-subtitle">{t('trh_subtitle')}</p>
 
       {streak.current > 0 && (
         <div className="card" style={{ textAlign: 'center', marginBottom: 16 }}>
           <div className="big-number">🔥 {streak.current}</div>
           <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-            {streak.current === 1 ? 'день подряд' : 'дней подряд'}
-            {!todayDone && ' — позанимайтесь сегодня, чтобы не прервать серию'}
-            {streak.best > streak.current && ` · рекорд: ${streak.best}`}
+            {streak.current === 1 ? t('trh_streak_one') : t('trh_streak_many')}
+            {!todayDone && t('trh_streak_nudge')}
+            {streak.best > streak.current && t('trh_streak_record', { n: streak.best })}
           </div>
         </div>
       )}
 
       {recentExams.length > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, marginBottom: 10 }}>Точность «Экзамена дня»</div>
+          <div style={{ fontWeight: 700, marginBottom: 10 }}>{t('trh_exam_accuracy_title')}</div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 60 }}>
             {recentExams.map((e) => {
               const pct = Math.round((e.score / e.total) * 100)
+              const d = new Date(e.date)
+              const dateLabel = lang === 'mn' ? `${d.getMonth() + 1}-р сарын ${d.getDate()}` : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
               return (
                 <div
                   key={e.date}
-                  title={`${new Date(e.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}: ${pct}%`}
+                  title={`${dateLabel}: ${pct}%`}
                   style={{
                     flex: 1,
                     height: `${Math.max(6, pct)}%`,
@@ -58,7 +60,7 @@ export default function TrainerHome() {
             })}
           </div>
           <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 6 }}>
-            последние {recentExams.length} {recentExams.length === 1 ? 'попытка' : 'попыток'}
+            {t('trh_exam_attempts_prefix')} {recentExams.length} {recentExams.length === 1 ? t('trh_exam_attempt_one') : t('trh_exam_attempt_many')}
           </div>
         </div>
       )}

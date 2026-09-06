@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useLanguage } from '../contexts/LanguageContext.jsx'
 
 const ORDERS_KEY = 'pt_my_orders_v1'
 const ENABLED_KEY = 'pt_notif_enabled_v1'
@@ -23,7 +24,7 @@ function tomorrowStr() {
 // и показывает локальное уведомление через service worker (если разрешено).
 // Без сервера push-уведомлений при закрытом приложении не бывает — сработает
 // только когда пользователь открывает или разворачивает приложение.
-async function checkAndNotify() {
+async function checkAndNotify(t) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   if (!readJson(ENABLED_KEY, false)) return
 
@@ -37,13 +38,13 @@ async function checkAndNotify() {
 
   const names = tomorrowOrders
     .slice(0, 3)
-    .map((it) => `${it.time ? it.time + ' — ' : ''}${it.clientName || it.brand || 'клиент'}`)
+    .map((it) => `${it.time ? it.time + ' — ' : ''}${it.clientName || it.brand || t('vr_client_fallback')}`)
     .join(', ')
-  const body = tomorrowOrders.length > 3 ? `${names} и ещё ${tomorrowOrders.length - 3}` : names
+  const body = tomorrowOrders.length > 3 ? `${names}${t('vr_more_suffix', { n: tomorrowOrders.length - 3 })}` : names
 
   try {
     const reg = await navigator.serviceWorker.ready
-    await reg.showNotification('Завтра визит', {
+    await reg.showNotification(t('vr_title'), {
       body,
       tag: 'visit-reminder',
       icon: './icons/icon-192.png',
@@ -55,13 +56,16 @@ async function checkAndNotify() {
 }
 
 export default function VisitReminderCheck() {
+  const { t } = useLanguage()
+
   useEffect(() => {
-    checkAndNotify()
+    checkAndNotify(t)
     const onVisible = () => {
-      if (document.visibilityState === 'visible') checkAndNotify()
+      if (document.visibilityState === 'visible') checkAndNotify(t)
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return null

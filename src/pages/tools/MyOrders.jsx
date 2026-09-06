@@ -88,7 +88,7 @@ function getReturningMap(items) {
   return map
 }
 
-async function shareText(title, text) {
+async function shareText(title, text, t) {
   if (navigator.share) {
     try {
       await navigator.share({ title, text })
@@ -98,14 +98,14 @@ async function shareText(title, text) {
   } else if (navigator.clipboard) {
     try {
       await navigator.clipboard.writeText(text)
-      alert('Текст скопирован в буфер обмена')
+      alert(t ? t('mo_alert_copied') : 'Текст скопирован в буфер обмена')
     } catch {
       /* ignore */
     }
   }
 }
 
-function shareReminder(order) {
+function shareReminder(order, t) {
   const parts = ['Напоминаю о визите:']
   if (order.date) {
     const dt = new Date(`${order.date}T${order.time || '00:00'}`)
@@ -113,26 +113,26 @@ function shareReminder(order) {
   }
   if (order.address) parts.push(`Адрес: ${order.address}`)
   parts.push('Если планы меняются — дайте, пожалуйста, знать.')
-  shareText('Напоминание о визите', parts.join('\n'))
+  shareText('Напоминание о визите', parts.join('\n'), t)
 }
 
-function shareOnMyWay(order) {
+function shareOnMyWay(order, t) {
   const eta = window.prompt('Через сколько минут будете на месте?', '30')
   if (eta === null) return
   const parts = ['Выезжаю к вам']
   if (eta.trim()) parts.push(`, буду примерно через ${eta.trim()} мин`)
   parts.push('.')
   if (order.address) parts.push(` Адрес: ${order.address}.`)
-  shareText('Выезжаю', parts.join(''))
+  shareText('Выезжаю', parts.join(''), t)
 }
 
-function shareBulkReminder(overdueClients) {
+function shareBulkReminder(overdueClients, t) {
   const lines = overdueClients.map((g) => `${g.label}${g.phone ? ` — ${g.phone}` : ''}`)
   const text = ['Пора напомнить о повторной настройке:', '', ...lines].join('\n')
-  shareText('Напоминания клиентам', text)
+  shareText('Напоминания клиентам', text, t)
 }
 
-function shareEstimate(order) {
+function shareEstimate(order, t) {
   const included = orderOperations.filter((s) => order.checklist?.[s.id])
   const lines = included.map((s) => {
     const price = order.prices?.[s.id]
@@ -145,7 +145,7 @@ function shareEstimate(order) {
   if (order.brand) headerParts.push(`(${order.brand})`)
   const parts = [headerParts.join(' '), '', ...lines]
   if (total > 0) parts.push('', `Итого: ${total.toLocaleString('ru-RU')} ₽`)
-  shareText('Смета', parts.join('\n'))
+  shareText('Смета', parts.join('\n'), t)
 }
 
 function buildIcs(order) {
@@ -754,7 +754,7 @@ export default function MyOrders() {
             <div style={{ fontWeight: 700 }}>
               ⏰ {overdueClients.length} {overdueClients.length === 1 ? t('mo_overdue_singular') : t('mo_overdue_plural')} {t('mo_overdue_suffix')}
             </div>
-            <button className="btn btn-sm" onClick={() => shareBulkReminder(overdueClients)}>{t('mo_remind_all')}</button>
+            <button className="btn btn-sm" onClick={() => shareBulkReminder(overdueClients, t)}>{t('mo_remind_all')}</button>
           </div>
           {overdueClients.map((g) => {
             const monthsAgo = Math.floor((new Date() - new Date(g.latest)) / 86400000 / 30)
@@ -1151,15 +1151,15 @@ export default function MyOrders() {
                     <button className="btn btn-sm" onClick={() => downloadIcs(it)}>{t('mo_to_calendar')}</button>
                   )}
                   {it.date && !label.past && (
-                    <button className="btn btn-sm" onClick={() => shareReminder(it)}>{t('mo_remind')}</button>
+                    <button className="btn btn-sm" onClick={() => shareReminder(it, t)}>{t('mo_remind')}</button>
                   )}
                   {it.date === todayStr && (
-                    <button className="btn btn-sm" onClick={() => shareOnMyWay(it)}>{t('mo_on_my_way')}</button>
+                    <button className="btn btn-sm" onClick={() => shareOnMyWay(it, t)}>{t('mo_on_my_way')}</button>
                   )}
                   <button className="btn btn-sm" onClick={() => navigate(`/tools/diagnostic?order=${it.id}`)}>{t('mo_diagnostic_btn')}</button>
                   <button className="btn btn-sm" onClick={() => navigate(`/tools/work-order?order=${it.id}`)}>{t('mo_work_order_btn')}</button>
                   {doneCount > 0 && (
-                    <button className="btn btn-sm" onClick={() => shareEstimate(it)}>{t('mo_estimate_btn')}</button>
+                    <button className="btn btn-sm" onClick={() => shareEstimate(it, t)}>{t('mo_estimate_btn')}</button>
                   )}
                   <button className="btn btn-sm" onClick={() => repeatOrder(it)}>{t('mo_repeat_btn')}</button>
                   {clientKey(it) && (

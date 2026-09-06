@@ -58,8 +58,8 @@ export default function MoreHome() {
           <span className="row-start">
             💾 <span>
               {daysAgo === null
-                ? 'Вы ни разу не делали резервную копию'
-                : `Резервная копия не обновлялась ${daysAgo} дн.`}
+                ? t('more_backup_never')
+                : t('more_backup_days_ago', { n: daysAgo })}
             </span>
           </span>
           <span>›</span>

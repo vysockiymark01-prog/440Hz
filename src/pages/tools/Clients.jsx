@@ -5,13 +5,13 @@ import { clientKey } from '../../utils/clientKey.js'
 import { orderTotal } from '../../utils/orderTotal.js'
 import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
-function buildClients(items) {
+function buildClients(items, noNameLabel) {
   const groups = {}
   items.forEach((it) => {
     const key = clientKey(it)
     if (!key) return
     if (!groups[key]) {
-      groups[key] = { key, label: it.clientName || it.brand || 'Без имени', phone: it.phone || '', visits: 0, total: 0, lastDate: null }
+      groups[key] = { key, label: it.clientName || it.brand || noNameLabel, phone: it.phone || '', visits: 0, total: 0, lastDate: null }
     }
     const g = groups[key]
     g.visits += 1
@@ -28,13 +28,13 @@ export default function Clients() {
   const [items] = useLocalStorage('pt_my_orders_v1', [])
   const [search, setSearch] = useState('')
 
-  const clients = useMemo(() => buildClients(items), [items])
+  const { t, lang } = useLanguage()
+  const clients = useMemo(() => buildClients(items, t('cl_no_name')), [items, t])
   const filtered = clients.filter((c) => {
     if (!search.trim()) return true
     const q = search.trim().toLowerCase()
     return [c.label, c.phone].filter(Boolean).join(' ').toLowerCase().includes(q)
   })
-  const { t } = useLanguage()
 
   return (
     <div>
@@ -65,7 +65,7 @@ export default function Clients() {
             <div style={{ fontWeight: 700 }}>{c.label}</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
               {c.visits} {t(c.visits === 1 ? 'cl_visit_one' : 'cl_visit_many')}
-              {c.lastDate ? ` · ${t('cl_last')} ${new Date(c.lastDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` : ''}
+              {c.lastDate ? ` · ${t('cl_last')} ${lang === 'mn' ? `${new Date(c.lastDate).getMonth() + 1}-р сарын ${new Date(c.lastDate).getDate()}` : new Date(c.lastDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}` : ''}
             </div>
           </span>
           <span style={{ textAlign: 'right' }}>

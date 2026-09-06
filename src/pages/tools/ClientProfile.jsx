@@ -9,12 +9,23 @@ import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 const CONTINUE_DRAFT_KEY = 'pt_continue_draft_v1'
 
-const PAYMENT_LABELS = { paid: 'Оплачено', partial: 'Частично', unpaid: 'Должен' }
+// Хромиум-браузерүүдийн ICU-д mn-MN бүрэн дэмжигдэхгүй байж болзошгүй тул
+// огноог гараар (тоон сар) форматлана.
+function shortDate(d, lang) {
+  if (lang === 'mn') return `${d.getMonth() + 1}-р сарын ${d.getDate()}`
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
+function longDate(d, lang) {
+  if (lang === 'mn') return `${d.getFullYear()} · ${d.getMonth() + 1}-р сарын ${d.getDate()}`
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 export default function ClientProfile() {
   const { key } = useParams()
   const navigate = useNavigate()
-  const { tr } = useLanguage()
+  const { t, tr, lang } = useLanguage()
+  const PAYMENT_LABELS = { paid: t('cpf_paid'), partial: t('cpf_partial'), unpaid: t('cpf_unpaid') }
   const [items] = useLocalStorage('pt_my_orders_v1', [])
   const [blacklist, setBlacklist] = useLocalStorage('pt_blacklist_v1', [])
   const decodedKey = decodeURIComponent(key)
@@ -30,8 +41,8 @@ export default function ClientProfile() {
   if (visits.length === 0) {
     return (
       <div>
-        <button className="back-link" onClick={() => navigate('/tools/clients')}>‹ Клиенты</button>
-        <div className="empty-state">Клиент не найден — возможно, заказ был удалён.</div>
+        <button className="back-link" onClick={() => navigate('/tools/clients')}>{t('cpf_back')}</button>
+        <div className="empty-state">{t('cpf_not_found')}</div>
       </div>
     )
   }
@@ -81,70 +92,70 @@ export default function ClientProfile() {
 
   return (
     <div>
-      <button className="back-link" onClick={() => navigate('/tools/clients')}>‹ Клиенты</button>
-      <h1 className="screen-title">{latest.clientName || latest.brand || 'Без имени'}</h1>
+      <button className="back-link" onClick={() => navigate('/tools/clients')}>{t('cpf_back')}</button>
+      <h1 className="screen-title">{latest.clientName || latest.brand || t('cl_no_name')}</h1>
       <p className="screen-subtitle">
-        {latest.clientType === 'org' ? '🏢 Организация' : '🙂 Физлицо'}
+        {latest.clientType === 'org' ? t('cpf_org') : t('cpf_person')}
         {latest.phone && <> · <a href={`tel:${latest.phone.replace(/[^+\d]/g, '')}`}>{latest.phone}</a></>}
       </p>
 
       {blacklistEntry && (
         <div className="result-flash bad" style={{ marginBottom: 14 }}>
           <div style={{ marginBottom: 8 }}>
-            🚫 В чёрном списке{blacklistEntry.reason ? `: ${blacklistEntry.reason}` : ''}
+            {t('cpf_blacklisted')}{blacklistEntry.reason ? `: ${blacklistEntry.reason}` : ''}
           </div>
-          <button className="btn btn-sm" onClick={removeFromBlacklist}>Убрать из чёрного списка</button>
+          <button className="btn btn-sm" onClick={removeFromBlacklist}>{t('cpf_unblacklist')}</button>
         </div>
       )}
 
       <div className="row" style={{ gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
         <div className="card" style={{ flex: '1 1 45%', textAlign: 'center' }}>
           <div className="big-number" style={{ fontSize: 22 }}>{visits.length}</div>
-          <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>визитов</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('cpf_visits_label')}</div>
         </div>
         <div className="card" style={{ flex: '1 1 45%', textAlign: 'center' }}>
           <div className="big-number" style={{ fontSize: 22 }}>{totalEarned.toLocaleString('ru-RU')} ₽</div>
-          <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>заработано всего</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 4 }}>{t('cpf_earned_label')}</div>
         </div>
       </div>
 
       {totalExpenses > 0 && (
         <div className="card row" style={{ marginBottom: 14, alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>Прибыль по клиенту</span>
+          <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{t('cpf_profit_label')}</span>
           <span style={{ fontWeight: 700 }}>{totalProfit.toLocaleString('ru-RU')} ₽</span>
         </div>
       )}
 
       {unfinishedVisit && (
         <div className="card" style={{ borderColor: 'var(--danger)', marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 6 }}>⏸ Есть незаконченная работа</div>
+          <div style={{ fontWeight: 700, color: 'var(--danger)', marginBottom: 6 }}>{t('cpf_unfinished_title')}</div>
           <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
-            Остановился на: {stoppedOpTitle || '—'}
+            {t('cpf_stopped_at')}: {stoppedOpTitle || '—'}
             {unfinishedVisit.stoppedNote ? ` — ${unfinishedVisit.stoppedNote}` : ''}
           </div>
-          <button className="btn btn-block btn-primary" onClick={continueVisit}>▶️ Продолжить у этого клиента</button>
+          <button className="btn btn-block btn-primary" onClick={continueVisit}>{t('cpf_continue_btn')}</button>
         </div>
       )}
 
       {totalDebt > 0 && (
         <div className="card" style={{ borderColor: 'var(--danger)', marginBottom: 14 }}>
           <div style={{ fontWeight: 700, color: 'var(--danger)' }}>
-            💰 Долг: {totalDebt.toLocaleString('ru-RU')} ₽ по {debtVisits.length} {debtVisits.length === 1 ? 'заказу' : 'заказам'}
+            💰 {t('cpf_debt_label')}: {totalDebt.toLocaleString('ru-RU')} ₽ · {debtVisits.length} {debtVisits.length === 1 ? t('cpf_debt_order_one') : t('cpf_debt_order_many')}
           </div>
         </div>
       )}
 
       <div className="card" style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-          Первый визит: {firstDate ? new Date(firstDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+          {t('cpf_first_visit')}: {firstDate ? longDate(new Date(firstDate), lang) : t('cpf_no_date')}
           <br />
-          Последний визит: {lastDate ? new Date(lastDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+          {t('cpf_last_visit')}: {lastDate ? longDate(new Date(lastDate), lang) : t('cpf_no_date')}
         </div>
       </div>
 
       {latest.address && (
         <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 6 }}>Последний известный адрес</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 6 }}>{t('cpf_last_address')}</div>
           <div>{latest.address}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <a className="btn btn-sm" href={`https://2gis.ru/search/${encodeURIComponent(latest.address)}`} target="_blank" rel="noopener noreferrer">2ГИС</a>
@@ -155,7 +166,7 @@ export default function ClientProfile() {
 
       {serialNumbers.length > 0 && (
         <div className="card" style={{ marginBottom: 14 }}>
-          <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 4 }}>Инструменты (серийный номер)</div>
+          <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 4 }}>{t('cpf_instruments_label')}</div>
           {serialNumbers.map((sn) => <div key={sn}>🔧 {sn}</div>)}
         </div>
       )}
@@ -166,7 +177,7 @@ export default function ClientProfile() {
         </div>
       )}
 
-      <div className="section-label">История визитов</div>
+      <div className="section-label">{t('cpf_history_label')}</div>
       {visits.map((it) => {
         const opsText = orderOperations.filter((op) => it.checklist?.[op.id]).map((op) => tr(op.title)).join(', ')
         const total = orderTotal(it)
@@ -174,13 +185,13 @@ export default function ClientProfile() {
           <div key={it.id} className="card">
             <div className="row" style={{ alignItems: 'center' }}>
               <div style={{ fontWeight: 700 }}>
-                {it.date ? new Date(it.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'без даты'}
+                {it.date ? longDate(new Date(it.date), lang) : t('cpf_no_date_short')}
               </div>
               {it.unfinished && (
-                <span className="pill" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>⏸ Не закончено</span>
+                <span className="pill" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>{t('cpf_unfinished_pill')}</span>
               )}
               {it.isWarranty ? (
-                <span className="pill">Гарантия</span>
+                <span className="pill">{t('cpf_warranty_pill')}</span>
               ) : total > 0 ? (
                 <span className="pill badge-accent">{total.toLocaleString('ru-RU')} ₽ · {PAYMENT_LABELS[it.paymentStatus] || PAYMENT_LABELS.unpaid}</span>
               ) : null}
@@ -188,7 +199,7 @@ export default function ClientProfile() {
             {opsText && <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 4 }}>{opsText}</div>}
             {it.unfinished && (
               <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>
-                Остановился на: {tr(orderOperations.find((op) => op.id === it.stoppedOpId)?.title) || '—'}
+                {t('cpf_stopped_at')}: {tr(orderOperations.find((op) => op.id === it.stoppedOpId)?.title) || '—'}
                 {it.stoppedNote ? ` — ${it.stoppedNote}` : ''}
               </div>
             )}
@@ -199,12 +210,12 @@ export default function ClientProfile() {
 
       {notes.length > 0 && (
         <>
-          <div className="section-label">Все заметки</div>
+          <div className="section-label">{t('cpf_notes_label')}</div>
           <div className="card">
             {notes.map((it, i) => (
               <div key={it.id} style={{ marginBottom: i < notes.length - 1 ? 8 : 0 }}>
                 <span style={{ color: 'var(--text-faint)', fontSize: 12 }}>
-                  {it.date ? new Date(it.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : ''}
+                  {it.date ? shortDate(new Date(it.date), lang) : ''}
                 </span>{' '}
                 {it.note}
               </div>
@@ -213,7 +224,7 @@ export default function ClientProfile() {
         </>
       )}
 
-      <Link to="/tools/my-orders" className="btn btn-block" style={{ marginTop: 16 }}>К списку заказов</Link>
+      <Link to="/tools/my-orders" className="btn btn-block" style={{ marginTop: 16 }}>{t('cpf_to_orders')}</Link>
     </div>
   )
 }
