@@ -38,7 +38,7 @@ export default function QuizRunner() {
     return (
       <div>
         <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ {t('qh_title')}</button>
-        <h1 className="screen-title">{lecture.title}</h1>
+        <h1 className="screen-title">{tr(lecture.title)}</h1>
         <div className="empty-state">
           {reason === 'prev_test'
             ? t('qr_locked_prev_test')
@@ -161,7 +161,7 @@ export default function QuizRunner() {
   return (
     <div>
       <button className="back-link" onClick={() => navigate('/reference/quiz')}>‹ {t('qh_title')}</button>
-      <h1 className="screen-title">{lecture.title}</h1>
+      <h1 className="screen-title">{tr(lecture.title)}</h1>
       <p className="screen-subtitle">{t('qr_question_progress', { n: index + 1, total: questions.length })}</p>
 
       <div className="card">

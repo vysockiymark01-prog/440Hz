@@ -40,8 +40,8 @@ export default function Favorites() {
           {favArticles.map(({ lecture, article }) => (
             <Link key={article.id} to={`/reference/${lecture.id}/${article.id}`} className="card-tap row">
               <span>
-                <div style={{ fontWeight: 700 }}>{article.title}</div>
-                <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>{lecture.title}</div>
+                <div style={{ fontWeight: 700 }}>{tr(article.title)}</div>
+                <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>{tr(lecture.title)}</div>
               </span>
               <span>›</span>
             </Link>

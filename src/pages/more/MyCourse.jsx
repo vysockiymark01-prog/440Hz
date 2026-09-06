@@ -22,7 +22,7 @@ const dateInputStyle = {
 
 export default function MyCourse() {
   const navigate = useNavigate()
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
   const {
     status, setStatus, startNoviceSchedule, schedule, setLectureDate,
     testsPassed, passedCount, totalLectures, isCourseComplete,
@@ -107,7 +107,7 @@ export default function MyCourse() {
               <span className="row-start">
                 <span className="pill badge-accent">{l.num}</span>
                 <span>
-                  <div style={{ fontWeight: 700 }}>{l.title}</div>
+                  <div style={{ fontWeight: 700 }}>{tr(l.title)}</div>
                   {testsPassed[l.id] && (
                     <div style={{ color: 'var(--success)', fontSize: 12, marginTop: 2 }}>{t('mc_test_passed')}</div>
                   )}

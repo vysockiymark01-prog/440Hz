@@ -102,7 +102,7 @@ export default function ReferenceHome() {
 
           const body = !unlocked ? (
             <div>
-              <div>{l.title}</div>
+              <div>{tr(l.title)}</div>
               <div style={{ color: 'var(--text-dim)', fontSize: 12, marginTop: 2 }}>
                 {lockReason(l.id) === 'prev_test'
                   ? t('rh_lock_prev_test')
@@ -112,7 +112,7 @@ export default function ReferenceHome() {
               </div>
             </div>
           ) : (
-            <div style={{ fontWeight: done ? 400 : 700 }}>{l.title}</div>
+            <div style={{ fontWeight: done ? 400 : 700 }}>{tr(l.title)}</div>
           )
 
           return (

@@ -2,10 +2,12 @@ import { useNavigate, Link } from 'react-router-dom'
 import lectures from '../../data/lectures.js'
 import { useLocalStorage } from '../../hooks/useLocalStorage.js'
 import { useCourseProgress } from '../../contexts/CourseProgressContext.jsx'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 export default function FinalReview() {
   const navigate = useNavigate()
   const { notes } = useCourseProgress()
+  const { t, tr } = useLanguage()
   const [wrongByLecture] = useLocalStorage('pt_quiz_wrong_v1', {})
 
   const lecturesWithNotes = lectures.filter((l) => notes[l.id] && notes[l.id].trim())
@@ -15,37 +17,37 @@ export default function FinalReview() {
 
   return (
     <div>
-      <button className="back-link no-print" onClick={() => navigate('/reference')}>‹ Справочник</button>
-      <h1 className="screen-title">Итоговое повторение</h1>
+      <button className="back-link no-print" onClick={() => navigate('/reference')}>‹ {t('back_reference')}</button>
+      <h1 className="screen-title">{t('fr_title')}</h1>
       <p className="screen-subtitle">
-        Все ваши заметки к лекциям и вопросы, где были ошибки в тестах, — в одном месте перед экзаменом.
+        {t('fr_subtitle')}
       </p>
 
       {hasAnything && (
         <button className="btn btn-block btn-primary no-print" style={{ marginBottom: 16 }} onClick={() => window.print()}>
-          🖨️ Скачать / напечатать в PDF
+          {t('fr_print_btn')}
         </button>
       )}
 
       {!hasAnything && (
         <div className="empty-state">
-          Пока нечего повторять — заметок нет, а во всех сданных тестах ошибок не было. Отличный результат!
+          {t('fr_empty')}
         </div>
       )}
 
       {lecturesWithWrong.length > 0 && (
         <>
-          <div className="section-label">Вопросы с ошибками</div>
+          <div className="section-label">{t('fr_wrong_label')}</div>
           {lecturesWithWrong.map((l) => (
             <div key={l.id} className="card">
               <div className="row" style={{ alignItems: 'center', marginBottom: 8 }}>
-                <div style={{ fontWeight: 700 }}>{l.title}</div>
-                <Link to={`/reference/quiz/${l.id}`} className="btn btn-sm no-print">Пройти тест снова</Link>
+                <div style={{ fontWeight: 700 }}>{tr(l.title)}</div>
+                <Link to={`/reference/quiz/${l.id}`} className="btn btn-sm no-print">{t('fr_retry_quiz')}</Link>
               </div>
               {wrongByLecture[l.id].map((w, i) => (
                 <div key={i} style={{ marginBottom: i < wrongByLecture[l.id].length - 1 ? 10 : 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{w.q}</div>
-                  <div style={{ color: 'var(--success)', fontSize: 13, marginTop: 2 }}>Правильно: {w.correct}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{tr(w.q)}</div>
+                  <div style={{ color: 'var(--success)', fontSize: 13, marginTop: 2 }}>{t('fr_correct_was', { answer: tr(w.correct) })}</div>
                 </div>
               ))}
             </div>
@@ -55,12 +57,12 @@ export default function FinalReview() {
 
       {lecturesWithNotes.length > 0 && (
         <>
-          <div className="section-label">Личные заметки</div>
+          <div className="section-label">{t('fr_notes_label')}</div>
           {lecturesWithNotes.map((l) => (
             <div key={l.id} className="card">
               <div className="row" style={{ alignItems: 'center', marginBottom: 6 }}>
-                <div style={{ fontWeight: 700 }}>{l.title}</div>
-                <Link to={`/reference/${l.id}`} className="btn btn-sm no-print">К лекции</Link>
+                <div style={{ fontWeight: 700 }}>{tr(l.title)}</div>
+                <Link to={`/reference/${l.id}`} className="btn btn-sm no-print">{t('fr_to_lecture')}</Link>
               </div>
               <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-dim)', fontSize: 14 }}>{notes[l.id]}</div>
             </div>

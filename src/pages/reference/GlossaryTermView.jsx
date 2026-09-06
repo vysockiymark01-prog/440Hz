@@ -30,7 +30,7 @@ export default function GlossaryTermView() {
       <p>{tr(term.definition)}</p>
       {lecture && (
         <Link to={`/reference/${lecture.id}`} className="pill badge-accent" style={{ display: 'inline-block' }}>
-          {t('glt_lecture_prefix', { num: lecture.num, title: lecture.title })}
+          {t('glt_lecture_prefix', { num: lecture.num, title: tr(lecture.title) })}
         </Link>
       )}
     </div>

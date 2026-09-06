@@ -4,16 +4,17 @@ import lectures from '../../data/lectures.js'
 import TermText from '../../components/TermText.jsx'
 import ArticleImages from '../../components/ArticleImages.jsx'
 import { useFavorites } from '../../hooks/useFavorites.js'
+import { useLanguage } from '../../contexts/LanguageContext.jsx'
 
 // Делит текст на предложения — это единица, с которой можно надёжно
 // продолжить чтение. Родной SpeechSynthesis.pause()/resume() на многих
 // Android-устройствах не работает (звук останавливается и не возобновляется,
 // это известная особенность системного TTS-движка Android), поэтому вместо
 // него читаем по предложениям и сами запоминаем, на каком остановились.
-function splitIntoChunks(article) {
-  const body = (article.body || '').replace(/\s+/g, ' ').trim()
+function splitIntoChunks(title, bodyText) {
+  const body = (bodyText || '').replace(/\s+/g, ' ').trim()
   const sentences = body.split(/(?<=[.!?])\s+/).filter(Boolean)
-  return [`${article.title}.`, ...sentences]
+  return [`${title}.`, ...sentences]
 }
 
 export default function ArticleView() {
@@ -22,6 +23,7 @@ export default function ArticleView() {
   const lecture = lectures.find((l) => l.id === lectureId)
   const article = lecture?.articles.find((a) => a.id === articleId)
   const { isArticleFav, toggleArticle } = useFavorites()
+  const { t, tr, lang } = useLanguage()
   // 'idle' — не запущено, 'speaking' — читает, 'paused' — на паузе (можно продолжить с того же места)
   const [speechState, setSpeechState] = useState('idle')
   const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -41,7 +43,7 @@ export default function ArticleView() {
       return
     }
     const utterance = new SpeechSynthesisUtterance(chunks[idx])
-    utterance.lang = 'ru-RU'
+    utterance.lang = lang === 'mn' ? 'mn-MN' : 'ru-RU'
     utterance.rate = 0.95
     utterance.onend = () => {
       if (!runningRef.current) return
@@ -53,7 +55,7 @@ export default function ArticleView() {
       setSpeechState('idle')
     }
     window.speechSynthesis.speak(utterance)
-  }, [])
+  }, [lang])
 
   useEffect(() => () => {
     runningRef.current = false
@@ -66,12 +68,12 @@ export default function ArticleView() {
   const startSpeech = useCallback(() => {
     if (!ttsSupported || !article) return
     window.speechSynthesis.cancel()
-    chunksRef.current = splitIntoChunks(article)
+    chunksRef.current = splitIntoChunks(tr(article.title), tr(article.body))
     indexRef.current = 0
     runningRef.current = true
     setSpeechState('speaking')
     speakChunk(0)
-  }, [ttsSupported, article, speakChunk])
+  }, [ttsSupported, article, speakChunk, tr])
 
   const toggleSpeech = useCallback(() => {
     if (!ttsSupported || !article) return
@@ -99,7 +101,7 @@ export default function ArticleView() {
   }, [])
 
   if (!lecture || !article) {
-    return <div className="empty-state">Статья не найдена.</div>
+    return <div className="empty-state">{t('av_not_found')}</div>
   }
 
   const fav = isArticleFav(lecture.id, article.id)
@@ -107,32 +109,32 @@ export default function ArticleView() {
   return (
     <div>
       <button className="back-link" onClick={() => navigate(`/reference/${lecture.id}`)}>
-        ‹ {lecture.title}
+        ‹ {tr(lecture.title)}
       </button>
       <div className="row" style={{ alignItems: 'flex-start' }}>
-        <h1 className="screen-title" style={{ flex: 1 }}>{article.title}</h1>
+        <h1 className="screen-title" style={{ flex: 1 }}>{tr(article.title)}</h1>
         <button
           className={`star-btn ${fav ? 'active' : ''}`}
           onClick={() => toggleArticle(lecture.id, article.id)}
-          aria-label="В избранное"
+          aria-label={t('av_fav_aria')}
         >
           {fav ? '★' : '☆'}
         </button>
       </div>
-      <p className="pill" style={{ marginBottom: 14 }}>Лекция {lecture.num} · {lecture.title}</p>
+      <p className="pill" style={{ marginBottom: 14 }}>{t('av_lecture_prefix', { num: lecture.num, title: tr(lecture.title) })}</p>
       {ttsSupported && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
           <button className="btn btn-block" onClick={toggleSpeech}>
-            {speechState === 'speaking' && '⏸️ Пауза'}
-            {speechState === 'paused' && '▶️ Продолжить'}
-            {speechState === 'idle' && '🔊 Прослушать статью'}
+            {speechState === 'speaking' && t('av_speech_pause')}
+            {speechState === 'paused' && t('av_speech_resume')}
+            {speechState === 'idle' && t('av_speech_start')}
           </button>
           {speechState !== 'idle' && (
-            <button className="btn" onClick={stopSpeech} aria-label="Остановить озвучку">⏹️</button>
+            <button className="btn" onClick={stopSpeech} aria-label={t('av_speech_stop_aria')}>⏹️</button>
           )}
         </div>
       )}
-      <TermText text={article.body} />
+      <TermText text={tr(article.body)} />
       <ArticleImages articleId={article.id} />
     </div>
   )

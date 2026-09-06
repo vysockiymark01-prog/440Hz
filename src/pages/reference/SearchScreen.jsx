@@ -12,9 +12,9 @@ function buildIndex(glossaryLabel, tr) {
       items.push({
         type: 'article',
         id: `${lecture.id}/${article.id}`,
-        title: article.title,
-        text: article.body,
-        lectureTitle: lecture.title,
+        title: tr(article.title),
+        text: tr(article.body),
+        lectureTitle: tr(lecture.title),
         to: `/reference/${lecture.id}/${article.id}`,
       })
     }

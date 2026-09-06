@@ -9,7 +9,7 @@ export default function QuizHome() {
   const navigate = useNavigate()
   const [results] = useLocalStorage('pt_quiz_results_v1', {})
   const { isLectureUnlocked } = useCourseProgress()
-  const { t } = useLanguage()
+  const { t, tr } = useLanguage()
 
   return (
     <div>
@@ -27,7 +27,7 @@ export default function QuizHome() {
               <span className="row-start">
                 <span className="pill badge-accent">{l.num}</span>
                 <span>
-                  <div style={{ fontWeight: 700 }}>{l.title}</div>
+                  <div style={{ fontWeight: 700 }}>{tr(l.title)}</div>
                   <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>{t('qh_locked')}</div>
                 </span>
               </span>
@@ -39,7 +39,7 @@ export default function QuizHome() {
             <span className="row-start">
               <span className="pill badge-accent">{l.num}</span>
               <span>
-                <div style={{ fontWeight: 700 }}>{l.title}</div>
+                <div style={{ fontWeight: 700 }}>{tr(l.title)}</div>
                 <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 2 }}>
                   {t('qh_questions_n', { n: questions.length })}
                   {best ? t('qh_best_result', { score: best.score, total: best.total }) : ''}
